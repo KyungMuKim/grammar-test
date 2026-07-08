@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>문법과제</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --bg:#f4f6fb; --card:#fff; --ink:#1c2333; --sub:#68718a; --pri:#7c3aed; --ok:#16a34a; --no:#dc2626; --line:#e5e9f2; --warn:#b45309; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:var(--bg); color:var(--ink); padding:16px; max-width:820px; margin:0 auto;}
+  .card{background:var(--card); border-radius:16px; padding:22px; box-shadow:0 2px 10px rgba(20,30,60,.06); margin-bottom:14px;}
+  h1{font-size:1.5rem; margin-bottom:6px;} h2{font-size:1.2rem; margin-bottom:8px;}
+  .sub{color:var(--sub); font-size:.9rem; margin-bottom:14px;}
+  .small{color:var(--sub); font-size:.8rem;}
+  .pill{background:#f3eeff; border-radius:10px; padding:12px 14px; font-size:.95rem; margin:10px 0; line-height:1.6;}
+  .btn-primary{background:var(--pri); color:#fff; border:none; border-radius:10px; padding:13px 22px; font-size:1.05rem; font-weight:700; cursor:pointer; width:100%;}
+  .btn-primary:disabled{opacity:.45; cursor:default;}
+  .btn-ghost{background:#eef1f8; color:var(--ink); border:none; border-radius:10px; padding:10px 16px; font-size:.95rem; cursor:pointer;}
+  .btn-sm{padding:6px 10px; font-size:.82rem; border-radius:8px;}
+  .row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .row .btn-primary{flex:1; width:auto;}
+  .student-btn{display:inline-block; background:#f3eeff; border:2px solid transparent; border-radius:12px; padding:14px 18px; margin:5px 4px; font-size:1.05rem; font-weight:700; cursor:pointer;}
+  .student-btn:active{border-color:var(--pri);}
+  .exam-btn{display:flex; justify-content:space-between; align-items:center; width:100%; background:#faf8ff; border:2px solid var(--line); border-radius:12px; padding:13px 16px; margin:6px 0; font-size:.98rem; font-weight:700; cursor:pointer; text-align:left; gap:8px;}
+  .exam-btn .done{color:var(--ok); font-size:.85rem; font-weight:700; white-space:nowrap;}
+  .progress{height:8px; background:var(--line); border-radius:4px; overflow:hidden; margin:8px 0 4px;}
+  .progress div{height:100%; background:var(--pri); transition:width .2s;}
+  table{width:100%; border-collapse:collapse; font-size:.9rem; margin-top:10px;}
+  th,td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;}
+  th{color:var(--sub); font-weight:600; font-size:.8rem;}
+  .ok{color:var(--ok); font-weight:800;} .no{color:var(--no); font-weight:800;}
+  .badge{font-size:.68rem; font-weight:700; border-radius:6px; padding:2px 7px; vertical-align:middle; margin-left:6px;}
+  .lv1{background:#dcfce7; color:#166534;} .lv2{background:#dbeafe; color:#1d4ed8;} .lv3{background:#fee2e2; color:#b91c1c;}
+  .score-big{font-size:2.2rem; font-weight:900; margin:10px 0;}
+  .tabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+  .tab{flex:1; min-width:80px; text-align:center; padding:10px; border-radius:10px; background:#eef1f8; font-weight:700; font-size:.88rem; cursor:pointer;}
+  .tab.on{background:var(--pri); color:#fff;}
+  select,input[type=text]{font-size:1rem; padding:10px; border:2px solid var(--line); border-radius:10px; background:#fff; max-width:100%;}
+  .flag{background:#f0fdf4; color:#166534; font-size:.82rem; border-radius:8px; padding:8px 10px; margin:8px 0;}
+  .flag.amber{background:#fffbeb; color:#92400e;}
+  .statbox{background:#faf8ff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:10px 0; font-size:.9rem; line-height:1.7;}
+  .live{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok); margin-right:6px; animation:pulse 1.5s infinite;}
+  @keyframes pulse{50%{opacity:.3}}
+  .qbox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; margin:10px 0; font-size:1rem; line-height:1.8; white-space:pre-wrap;}
+  .qbox u{text-underline-offset:3px;}
+  .choicesV{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
+  .choiceV{padding:12px 14px; font-size:.98rem; border:2px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; text-align:left; line-height:1.5;}
+  .choiceV.sel{border-color:var(--pri); background:#f3eeff; color:var(--pri); font-weight:700;}
+  .navgrid{display:grid; grid-template-columns:repeat(10,1fr); gap:5px; margin:10px 0;}
+  .navq{padding:7px 0; text-align:center; border-radius:8px; background:#eef1f8; font-weight:700; font-size:.8rem; cursor:pointer; border:2px solid transparent;}
+  .navq.answered{background:#dcfce7; color:#166534;}
+  .navq.cur{border-color:var(--pri);}
+  .bar{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;}
+  .oxgrid{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin:10px 0;}
+  .oxcell{padding:9px 0; text-align:center; border-radius:8px; font-weight:800; font-size:.9rem;}
+  .oxcell.o{background:#dcfce7; color:#166534;} .oxcell.x{background:#fee2e2; color:#b91c1c;}
+  .copybox{white-space:pre-wrap; background:#faf8ff; border:1px solid var(--line); border-radius:10px; padding:14px; font-size:.9rem; line-height:1.7; margin:10px 0;}
+  .expl{background:#fffbeb; border-radius:8px; padding:10px 12px; font-size:.88rem; line-height:1.6; margin:6px 0 14px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ================= 설정 (단어시험·미니모의고사와 동일 Supabase) ================= */
+const CONFIG = {
+  SUPABASE_URL: "https://xtxuozcbeqruuigeijsz.supabase.co",
+  SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eHVvemNiZXFydXVpZ2VpanN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNjI4MzMsImV4cCI6MjA5ODczODgzM30.kuHunWODG6_lv3JajIMmr6Xw7yEORy-Dixs-EB4sYaM",
+  TEACHER_PIN: "2580",
+  EXCLUDE_NAMES: ["실험용","실험","테스트","test","딘"],
+  RECENT_WARN_MIN: 30
+};
+const LV = {1:"중3", 2:"고1·2", 3:"고3+"};
+const lvBadge = l => `<span class="badge lv${l}">${LV[l]}</span>`;
+const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+const app = document.getElementById("app");
+let S = {};        // 학생 세션
+let T = {};        // 선생님 세션
+let UNITS = null, TESTS = null;
+const QCACHE = {};
+
+/* ================= 공통 ================= */
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// 문제 본문: <u>,<b>만 허용 (출제자 입력 신뢰 기반)
+const qhtml = s => esc(s).replace(/&lt;(\/?)(u|b)&gt;/g, "<$1$2>");
+const CN = ["","①","②","③","④","⑤"];
+function err(e){ alert("오류: " + (e.message||e)); throw e; }
+const fmtDate = t => { const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
+const draftKey = id => "grammar_draft_" + id;
+function saveDraft(){ try{ localStorage.setItem(draftKey(S.student.id), JSON.stringify({testId:S.test.id, answers:S.answers, idx:S.idx, startedAt:S.startedAt})); }catch(e){} }
+function loadDraft(id){ try{ const r=localStorage.getItem(draftKey(id)); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function clearDraft(id){ try{ localStorage.removeItem(draftKey(id)); }catch(e){} }
+const isExcluded = name => CONFIG.EXCLUDE_NAMES.includes((name||"").trim());
+
+async function getUnits(){
+  if(UNITS) return UNITS;
+  const { data, error } = await sb.from("grammar_units").select("*").order("unit_no");
+  if(error) err(error);
+  UNITS = data; return data;
+}
+async function getTests(force){
+  if(TESTS && !force) return TESTS;
+  const { data, error } = await sb.from("grammar_tests").select("*").order("id");
+  if(error) err(error);
+  data.forEach((t,i)=>t.ord=i+1);
+  TESTS = data; return data;
+}
+async function getQuestions(ids){
+  const need = ids.filter(id=>!QCACHE[id]);
+  if(need.length){
+    const { data, error } = await sb.from("grammar_questions").select("*").in("id", need);
+    if(error) err(error);
+    (data||[]).forEach(q=>QCACHE[q.id]=q);
+  }
+  return ids.map(id=>QCACHE[id]).filter(Boolean);
+}
+const testRange = t => t.unit_from===t.unit_to ? `Unit ${String(t.unit_from).padStart(2,"0")}` : `Unit ${String(t.unit_from).padStart(2,"0")}~${String(t.unit_to).padStart(2,"0")}`;
+
+/* ================= 학생: 홈 ================= */
+async function home(){
+  app.innerHTML = `<div class="card"><h1>문법과제 ✏️</h1><div class="sub">불러오는 중...</div></div>`;
+  const { data: students, error } = await sb.from("students").select("*").eq("active", true).order("name");
+  if(error) err(error);
+  app.innerHTML = `
+   <div class="card">
+     <h1>문법과제 ✏️</h1>
+     <div class="sub">Grammar Zone 진도별 문법 평가 — 이름을 선택하세요</div>
+     ${students.map(s=>`<button class="student-btn" onclick='pickStudent(${JSON.stringify(s)})'>${esc(s.name)}</button>`).join("") || '<div class="pill">등록된 학생이 없어요.</div>'}
+     <div class="row"><button class="btn-ghost btn-sm" onclick="teacherLogin()">🔑 선생님</button></div>
+   </div>`;
+}
+
+window.pickStudent = function(student){
+  const d = loadDraft(student.id);
+  app.innerHTML = `
+   <div class="card">
+     <h2>본인 확인</h2>
+     <div class="sub">아래 이름이 <b>본인</b>이 맞는지 확인하고, <b>비밀번호 4자리</b>를 입력하세요. (단어시험과 같은 비밀번호)</div>
+     <div style="font-size:2.2rem; font-weight:900; text-align:center; margin:14px 0">${esc(student.name)}</div>
+     <div class="row" style="justify-content:center">
+       <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"
+         placeholder="비밀번호 4자리" style="text-align:center; font-size:1.3rem; letter-spacing:.35em; width:190px; padding:10px; border:2px solid #cbd5e1; border-radius:10px">
+     </div>
+     ${d?`<div class="flag amber">💾 진행하던 시험이 남아있어요. 이어서 볼 수 있어요.</div>`:""}
+     <div class="row"><button class="btn-primary" onclick='pinGo(${JSON.stringify(student)}, false)'>네, ${esc(student.name)} 입니다 →</button></div>
+     ${d?`<div class="row"><button class="btn-ghost" onclick='pinGo(${JSON.stringify(student)}, true)'>💾 진행하던 시험 이어서 하기</button></div>`:""}
+     <div class="row"><button class="btn-ghost btn-sm" onclick="home()">← 아니에요, 이름 다시 선택</button></div>
+   </div>`;
+  const inp = document.getElementById("pinInput");
+  inp.focus();
+  inp.addEventListener("keydown", e=>{ if(e.key==="Enter") pinGo(student, false); });
+};
+
+window.pinGo = async function(student, resume){
+  const inp = document.getElementById("pinInput");
+  const pin = (inp && inp.value || "").trim();
+  if(!/^\d{4}$/.test(pin)){ alert("비밀번호 4자리(숫자)를 입력하세요"); if(inp) inp.focus(); return; }
+  const btns = document.querySelectorAll("button");
+  btns.forEach(b=>b.disabled=true);
+  const { data: ok, error } = await sb.rpc("student_pin_verify", { p_student_id: student.id, p_pin: pin });
+  if(error){ btns.forEach(b=>b.disabled=false); return alert("오류: "+error.message); }
+  if(!ok){
+    btns.forEach(b=>b.disabled=false);
+    if(inp){ inp.value=""; inp.focus(); }
+    return alert("비밀번호가 달라요. 본인 이름이 맞는지, 비밀번호를 다시 확인하세요.");
+  }
+  resume ? resumeDraft(student) : testList(student);
+};
+
+window.resumeDraft = async function(student){
+  const d = loadDraft(student.id);
+  if(!d){ testList(student); return; }
+  const tests = await getTests();
+  const test = tests.find(t=>t.id===d.testId);
+  if(!test){ clearDraft(student.id); testList(student); return; }
+  const qs = await getQuestions(test.question_ids);
+  S = { student, test, qs, answers:d.answers, idx:d.idx||0, startedAt:d.startedAt||Date.now() };
+  question();
+};
+
+/* ================= 학생: 시험지 선택 ================= */
+window.testList = async function(student){
+  app.innerHTML = `<div class="card"><h2>${esc(student.name)}</h2><div class="sub">시험지 불러오는 중...</div></div>`;
+  const tests = (await getTests(true)).filter(t=>t.active);
+  const { data: atts, error } = await sb.from("grammar_attempts").select("test_id, score, total, taken_at").eq("student_id", student.id).order("taken_at");
+  if(error) err(error);
+  const done = {};
+  (atts||[]).forEach(a=>{ if(!(a.test_id in done)) done[a.test_id]=a; });
+  const last = (atts||[])[atts.length-1];
+  const warn = last && (Date.now()-new Date(last.taken_at) < CONFIG.RECENT_WARN_MIN*60000)
+    ? `<div class="flag amber">⚠️ 방금 전(${fmtDate(last.taken_at)})에 응시한 기록이 있어요. 본인이 맞는지 확인하세요.</div>` : "";
+  app.innerHTML = `
+   <div class="card">
+     <h2>${esc(student.name)}</h2>
+     <div class="sub">응시할 시험지를 선택하세요 · 완료 ${tests.filter(t=>done[t.id]).length}/${tests.length}</div>
+     ${warn}
+     ${tests.map(t=>{
+        const d = done[t.id];
+        return `<button class="exam-btn" onclick='testConfirm(${JSON.stringify(student)}, ${t.id})'>
+          <span>${t.ord}회 · ${esc(t.label)}<br><span class="small">${testRange(t)} · ${t.question_ids.length}문항</span></span>
+          <span class="${d?"done":"small"}">${d?`✅ ${d.score}/${d.total}`:"미응시"}</span></button>`;
+      }).join("") || '<div class="pill">아직 열린 시험지가 없어요. 선생님이 진도를 입력하면 시험지가 생겨요.</div>'}
+     <div class="row"><button class="btn-ghost btn-sm" onclick="home()">← 이름 다시 선택</button></div>
+   </div>`;
+};
+
+window.testConfirm = async function(student, testId){
+  const tests = await getTests();
+  const test = tests.find(t=>t.id===testId);
+  const { count } = await sb.from("grammar_attempts").select("id", {count:"exact", head:true}).eq("student_id", student.id).eq("test_id", testId);
+  const nU = test.unit_to - test.unit_from + 1;
+  app.innerHTML = `
+   <div class="card">
+     <h2>${test.ord}회 · ${esc(test.label)}</h2>
+     <div class="pill">${testRange(test)} — 유닛당 5문항 (${lvBadge(1)} 2문항 + ${lvBadge(2)} 2문항 + ${lvBadge(3)} 1문항) × ${nU}유닛 = <b>${test.question_ids.length}문항</b><br>
+     <span class="small">권장 시간 약 ${Math.max(10, test.question_ids.length)}분 · 제출하면 바로 채점되고 오답 해설을 볼 수 있어요.</span></div>
+     ${count?`<div class="flag amber">이미 ${count}회 응시했어요. 다시 풀면 기록은 남지만 통계에는 <b>첫 응시</b>가 반영돼요.</div>`:""}
+     <div class="row"><button class="btn-primary" onclick='startTest(${JSON.stringify(student)}, ${testId})'>시험 시작</button></div>
+     <div class="row"><button class="btn-ghost btn-sm" onclick='testList(${JSON.stringify(student)})'>← 시험지 다시 선택</button></div>
+   </div>`;
+};
+
+window.startTest = async function(student, testId){
+  const tests = await getTests();
+  const test = tests.find(t=>t.id===testId);
+  app.innerHTML = `<div class="card"><h2>문제 불러오는 중...</h2></div>`;
+  const qs = await getQuestions(test.question_ids);
+  S = { student, test, qs, answers:Object.fromEntries(qs.map(q=>[q.id,0])), idx:0, startedAt:Date.now() };
+  saveDraft();
+  question();
+};
+
+/* ================= 학생: 문항 화면 ================= */
+function question(){
+  const i = S.idx, q = S.qs[i], total = S.qs.length;
+  const answered = S.qs.filter(x=>S.answers[x.id]>0).length;
+  const mins = Math.floor((Date.now()-S.startedAt)/60000);
+  app.innerHTML = `
+   <div class="card">
+     <div class="bar">
+       <b>${i+1}번 <span class="small">/ ${total}</span> ${lvBadge(q.level)} <span class="badge" style="background:#eef1f8;color:#475069">U${String(q.unit_no).padStart(2,"0")}</span></b>
+       <span class="small">${answered}/${total} 응답 · ${mins}분</span>
+     </div>
+     <div class="progress"><div style="width:${(answered/total*100).toFixed(0)}%"></div></div>
+     <div class="navgrid">${S.qs.map((x,j)=>`<div class="navq ${S.answers[x.id]>0?"answered":""} ${j===i?"cur":""}" onclick="goQ(${j})">${j+1}</div>`).join("")}</div>
+     <div class="qbox">${qhtml(q.stem)}</div>
+     <div class="choicesV">${q.choices.map((c,ci)=>`<button class="choiceV ${S.answers[q.id]===ci+1?"sel":""}" onclick="pickAns(${q.id},${ci+1})">${CN[ci+1]} ${qhtml(c)}</button>`).join("")}</div>
+     <div class="row">
+       <button class="btn-ghost" onclick="goQ(${i-1})" ${i===0?"disabled":""}>← 이전</button>
+       ${i<total-1
+         ? `<button class="btn-primary" onclick="goQ(${i+1})">다음 →</button>`
+         : `<button class="btn-primary" onclick="submitTest()">제출하기 ✅</button>`}
+     </div>
+     <div class="row"><button class="btn-ghost btn-sm" onclick="quitTest()">중단 (임시저장)</button></div>
+   </div>`;
+  window.scrollTo(0,0);
+}
+window.goQ = function(j){ if(j<0||j>=S.qs.length) return; S.idx=j; saveDraft(); question(); };
+window.pickAns = function(qid,c){ S.answers[qid]=c; saveDraft(); const i=S.idx; if(i<S.qs.length-1){ S.idx=i+1; } question(); };
+window.quitTest = function(){ saveDraft(); alert("임시저장 됐어요. 다음에 이름을 누르면 이어서 볼 수 있어요."); home(); };
+
+/* ================= 학생: 제출/채점 ================= */
+window.submitTest = async function(){
+  const blank = S.qs.map((q,j)=>S.answers[q.id]?null:j+1).filter(Boolean);
+  if(blank.length && !confirm(`아직 안 푼 문항이 있어요: ${blank.join(", ")}번\n그래도 제출할까요? (무응답은 오답 처리)`)) return;
+  app.innerHTML = `<div class="card"><h2>채점 중...</h2></div>`;
+  let score = 0;
+  const items = S.qs.map((q,j)=>{
+    const a = S.answers[q.id]||null;
+    const ok = a === q.answer;
+    if(ok) score++;
+    return { question_id:q.id, unit_no:q.unit_no, level:q.level, answer:a, correct:ok, seq:j };
+  });
+  const dur = Math.round((Date.now()-S.startedAt)/1000);
+  const { data: att, error } = await sb.from("grammar_attempts")
+    .insert({ student_id:S.student.id, test_id:S.test.id, score, total:S.qs.length, duration_sec:dur })
+    .select().single();
+  if(error) err(error);
+  const { error: e2 } = await sb.from("grammar_attempt_items").insert(items.map(it=>({ ...it, attempt_id:att.id })));
+  if(e2) err(e2);
+  clearDraft(S.student.id);
+  resultScreen(att, items);
+};
+
+function resultScreen(att, items){
+  const wrong = items.filter(it=>!it.correct);
+  app.innerHTML = `
+   <div class="card">
+     <h2>${esc(S.student.name)} · ${esc(S.test.label)} 결과</h2>
+     <div class="score-big">${att.score} / ${att.total}</div>
+     <div class="sub">${testRange(S.test)} · ${Math.floor(att.duration_sec/60)}분 ${att.duration_sec%60}초</div>
+     <div class="oxgrid">${items.map((it,j)=>`<div class="oxcell ${it.correct?"o":"x"}">${j+1} ${it.correct?"○":"✕"}</div>`).join("")}</div>
+     ${wrong.length ? `<h2 style="margin-top:16px">오답 다시 보기 (${wrong.length}문항)</h2>
+       ${wrong.map(it=>{
+         const q = QCACHE[it.question_id];
+         return `<div class="pill"><b>${it.seq+1}번</b> ${lvBadge(q.level)} <span class="badge" style="background:#eef1f8;color:#475069">U${String(q.unit_no).padStart(2,"0")}</span> — 내 답: <span class="no">${it.answer?CN[it.answer]:"무응답"}</span> · 정답: <span class="ok">${CN[q.answer]}</span></div>
+         <div class="qbox">${qhtml(q.stem)}</div>
+         <div class="qbox" style="font-size:.9rem">${q.choices.map((c,ci)=>`${CN[ci+1]} ${qhtml(c)}`).join("<br>")}</div>
+         <div class="expl">💡 ${esc(q.explanation)}</div>`;
+       }).join("")}`
+       : `<div class="flag">🎉 전부 맞았어요! 완벽해요.</div>`}
+     <div class="row"><button class="btn-primary" onclick='testList(${JSON.stringify(S.student)})'>다른 시험지 풀기</button></div>
+     <div class="row"><button class="btn-ghost btn-sm" onclick="home()">처음으로</button></div>
+   </div>`;
+  window.scrollTo(0,0);
+}
+
+/* ================= 선생님 ================= */
+window.teacherLogin = function(){
+  const pin = prompt("선생님 비밀번호");
+  if(pin !== CONFIG.TEACHER_PIN){ if(pin!==null) alert("비밀번호가 달라요"); return; }
+  T = { tab:"progress" };
+  sb.channel("grammar_dash")
+    .on("postgres_changes",{event:"*",schema:"public",table:"grammar_attempts"}, ()=>{ if(T.tab==="live") dashLive(); })
+    .subscribe();
+  dashProgress();
+};
+function dashShell(inner){
+  app.innerHTML = `
+   <div class="card">
+     <div class="bar"><h1>선생님 대시보드</h1><button class="btn-ghost btn-sm" onclick="home()">나가기</button></div>
+     <div class="tabs">
+       <div class="tab ${T.tab==="progress"?"on":""}" onclick="dashProgress()">📚 진도·시험지</div>
+       <div class="tab ${T.tab==="live"?"on":""}" onclick="dashLive()">📡 실시간</div>
+       <div class="tab ${T.tab==="test"?"on":""}" onclick="dashTest()">📊 시험지 통계</div>
+       <div class="tab ${T.tab==="students"?"on":""}" onclick="dashStudents()">👥 학생</div>
+       <div class="tab ${T.tab==="report"?"on":""}" onclick="dashReport()">📨 리포트</div>
+     </div>
+     ${inner}
+   </div>`;
+}
+
+/* ---- 탭1: 진도·시험지 (핵심) ---- */
+window.dashProgress = async function(){
+  T.tab="progress";
+  const units = await getUnits();
+  const tests = await getTests(true);
+  const covered = new Set();
+  tests.forEach(t=>{ for(let u=t.unit_from; u<=t.unit_to; u++) covered.add(u); });
+  const maxCovered = Math.max(0, ...covered);
+  const defFrom = Math.min(46, maxCovered+1);
+  const opt = sel => units.map(u=>`<option value="${u.unit_no}" ${u.unit_no===sel?"selected":""}>U${String(u.unit_no).padStart(2,"0")} ${esc(u.title)}</option>`).join("");
+  dashShell(`
+    <h2>새 진도 입력 → 시험지 생성</h2>
+    <div class="pill">이번에 나간 진도 범위를 지정하면 해당 유닛 문제(유닛당 5문항: 중3×2 + 고1·2×2 + 고3+×1)로 시험지가 만들어져요.${covered.size?`<br><span class="small">지금까지 나간 진도: U${String(Math.min(...covered)).padStart(2,"0")}~U${String(maxCovered).padStart(2,"0")} (시험지 ${tests.length}장)</span>`:""}</div>
+    <table style="margin-bottom:4px"><tr>
+      <td style="border:none; padding:4px">시작<br><select id="uFrom" onchange="updPreview()">${opt(defFrom)}</select></td>
+      <td style="border:none; padding:4px">끝<br><select id="uTo" onchange="updPreview()">${opt(defFrom)}</select></td>
+    </tr></table>
+    <div style="padding:4px">시험지 이름 (비우면 자동)<br><input type="text" id="tLabel" placeholder="예: 7/9 진도평가" style="width:100%"></div>
+    <div class="statbox" id="preview"></div>
+    <div class="row"><button class="btn-primary" onclick="createTest()">시험지 생성</button></div>
+    <h2 style="margin-top:20px">시험지 목록</h2>
+    <table><tr><th>회차</th><th>이름</th><th>범위</th><th>문항</th><th>생성일</th><th>상태</th><th></th></tr>
+    ${tests.map(t=>`<tr>
+      <td>${t.ord}회</td><td>${esc(t.label)}</td><td>${testRange(t)}</td><td>${t.question_ids.length}</td><td class="small">${fmtDate(t.created_at)}</td>
+      <td>${t.active?'<span class="ok">열림</span>':'<span class="small">마감</span>'}</td>
+      <td><button class="btn-ghost btn-sm" onclick="toggleTest(${t.id}, ${!t.active})">${t.active?"마감":"다시 열기"}</button></td></tr>`).join("") || "<tr><td colspan=7>아직 시험지가 없어요</td></tr>"}</table>`);
+  updPreview();
+};
+window.updPreview = async function(){
+  const f = Number(document.getElementById("uFrom").value), t = Number(document.getElementById("uTo").value);
+  const box = document.getElementById("preview");
+  if(t<f){ box.innerHTML = "⚠️ 끝 유닛이 시작 유닛보다 앞이에요."; return; }
+  const n = t-f+1;
+  const units = await getUnits();
+  box.innerHTML = `범위 <b>U${String(f).padStart(2,"0")}~U${String(t).padStart(2,"0")}</b> (${n}유닛) → <b>${n*5}문항</b><br>
+    <span class="small">${units.filter(u=>u.unit_no>=f&&u.unit_no<=t).map(u=>`U${String(u.unit_no).padStart(2,"0")} ${esc(u.title)}`).join(" · ")}</span>`;
+};
+window.createTest = async function(){
+  const f = Number(document.getElementById("uFrom").value), t = Number(document.getElementById("uTo").value);
+  if(t<f) return alert("끝 유닛이 시작 유닛보다 앞이에요.");
+  const tests = await getTests();
+  const dup = tests.find(x=>x.unit_from===f && x.unit_to===t);
+  if(dup && !confirm(`같은 범위(${testRange(dup)})의 시험지 "${dup.label}"가 이미 있어요. 그래도 새로 만들까요?`)) return;
+  const { data: qs, error } = await sb.from("grammar_questions").select("id, unit_no, level").eq("active", true).gte("unit_no", f).lte("unit_no", t).order("unit_no").order("level").order("id");
+  if(error) err(error);
+  if(!qs.length) return alert("해당 범위에 문제가 없어요.");
+  let label = (document.getElementById("tLabel").value||"").trim();
+  if(!label){
+    const d = new Date();
+    label = `${d.getMonth()+1}/${d.getDate()} 진도평가 (U${String(f).padStart(2,"0")}~${String(t).padStart(2,"0")})`;
+  }
+  const { error: e2 } = await sb.from("grammar_tests").insert({ label, unit_from:f, unit_to:t, question_ids:qs.map(q=>q.id) });
+  if(e2) err(e2);
+  alert(`시험지 생성 완료! (${qs.length}문항)\n학생 화면에 바로 나타나요.`);
+  dashProgress();
+};
+window.toggleTest = async function(id, active){
+  const { error } = await sb.from("grammar_tests").update({ active }).eq("id", id);
+  if(error) err(error);
+  dashProgress();
+};
+
+/* ---- 탭2: 실시간 ---- */
+window.dashLive = async function(){
+  T.tab="live";
+  const { data, error } = await sb.from("grammar_attempts")
+    .select("*, students(name), grammar_tests(label)").order("taken_at",{ascending:false}).limit(30);
+  if(error) err(error);
+  const rows = (data||[]).map(a=>`<tr>
+    <td>${fmtDate(a.taken_at)}</td><td><b>${esc(a.students?.name)}</b></td>
+    <td>${esc(a.grammar_tests?.label||"")}</td>
+    <td><b>${a.score}</b>/${a.total}</td><td>${a.duration_sec?Math.round(a.duration_sec/60)+"분":""}</td></tr>`).join("");
+  dashShell(`<h2><span class="live"></span>최근 응시</h2>
+    <table><tr><th>시각</th><th>학생</th><th>시험지</th><th>점수</th><th>시간</th></tr>${rows||"<tr><td colspan=5>아직 응시 기록이 없어요</td></tr>"}</table>`);
+};
+
+/* ---- 탭3: 시험지 통계 ---- */
+window.dashTest = async function(testId){
+  T.tab="test";
+  const tests = await getTests();
+  testId = testId || T.testId || tests[tests.length-1]?.id;
+  T.testId = testId;
+  const sel = `<select onchange="dashTest(Number(this.value))">${tests.map(t=>`<option value="${t.id}" ${t.id===testId?"selected":""}>${t.ord}회 · ${esc(t.label)}</option>`).join("")}</select>`;
+  const test = tests.find(t=>t.id===testId);
+  if(!test){ dashShell(`<h2>시험지 통계</h2><div class="pill">시험지 없음</div>`); return; }
+  const { data: atts, error } = await sb.from("grammar_attempts").select("id, student_id, score, total, taken_at, students(name)").eq("test_id", testId).order("taken_at");
+  if(error) err(error);
+  const firstBy = {};
+  (atts||[]).filter(a=>!isExcluded(a.students?.name)).forEach(a=>{ if(!(a.student_id in firstBy)) firstBy[a.student_id]=a; });
+  const first = Object.values(firstBy);
+  const attIds = first.map(a=>a.id);
+  let itemStats = "";
+  if(attIds.length){
+    const { data: items, error: e2 } = await sb.from("grammar_attempt_items").select("attempt_id, question_id, unit_no, level, answer, correct, seq").in("attempt_id", attIds);
+    if(e2) err(e2);
+    await getQuestions(test.question_ids);
+    const byQ = {};
+    test.question_ids.forEach(id=>byQ[id]={n:0, wrong:0, dist:[0,0,0,0,0,0], seq:0});
+    (items||[]).forEach(it=>{ const b=byQ[it.question_id]; if(!b) return; b.n++; b.seq=it.seq; if(!it.correct) b.wrong++; if(it.answer) b.dist[it.answer]++; });
+    const sorted = [...test.question_ids].sort((a,b)=>(byQ[b].wrong/(byQ[b].n||1))-(byQ[a].wrong/(byQ[a].n||1)));
+    itemStats = `<h2 style="margin-top:16px">문항별 오답률 <span class="small">(해설 우선순위)</span></h2>
+      <table><tr><th>번호</th><th>유닛</th><th>수준</th><th>정답</th><th>오답률</th><th>선지 분포</th><th></th></tr>
+      ${sorted.map(id=>{ const b=byQ[id], q=QCACHE[id]; const r=b.n?Math.round(b.wrong/b.n*100):0;
+        return `<tr><td><b>${b.seq+1}</b></td><td>U${String(q.unit_no).padStart(2,"0")}</td><td>${LV[q.level]}</td><td>${CN[q.answer]}</td>
+          <td class="${r>=50?"no":""}">${r}% (${b.wrong}/${b.n})</td>
+          <td class="small">${[1,2,3,4,5].map(c=>`${CN[c]}${b.dist[c]}`).join(" ")}</td>
+          <td><button class="btn-ghost btn-sm" onclick="showQ(${id})">보기</button></td></tr>`; }).join("")}</table>`;
+  }
+  const avg = first.length ? (first.reduce((s,a)=>s+a.score,0)/first.length).toFixed(1) : "-";
+  dashShell(`<h2>시험지 통계</h2><div class="row" style="margin-bottom:8px">${sel}</div>
+    <div class="statbox">응시 <b>${first.length}명</b> · 평균 <b>${avg}</b>/${test.question_ids.length}</div>
+    <table><tr><th>학생</th><th>점수</th><th>응시 시각</th></tr>
+    ${first.sort((a,b)=>b.score-a.score).map(a=>`<tr><td>${esc(a.students?.name)}</td><td><b>${a.score}</b>/${a.total}</td><td>${fmtDate(a.taken_at)}</td></tr>`).join("") || "<tr><td colspan=3>응시 없음</td></tr>"}</table>
+    ${itemStats}`);
+};
+window.showQ = async function(qid){
+  const [q] = await getQuestions([qid]);
+  if(!q) return;
+  const w = window.open("", "_blank");
+  w.document.write(`<body style="max-width:720px;margin:20px auto;font-family:sans-serif;line-height:1.8">
+    <h3>U${String(q.unit_no).padStart(2,"0")} · ${LV[q.level]} 수준 · ${esc(q.qtype)}</h3>
+    <div style="white-space:pre-wrap;border:1px solid #ddd;border-radius:8px;padding:16px">${qhtml(q.stem)}</div>
+    <p>${q.choices.map((c,ci)=>`${CN[ci+1]} ${qhtml(c)}`).join("<br>")}</p>
+    <p><b>정답: ${CN[q.answer]}</b></p>
+    <p style="background:#fffbeb;padding:12px;border-radius:8px">💡 ${esc(q.explanation)}</p></body>`);
+};
+
+/* ---- 탭4: 학생 ---- */
+window.dashStudents = async function(){
+  T.tab="students";
+  const { data: students, error } = await sb.from("students").select("*").eq("active",true).order("name");
+  if(error) err(error);
+  dashShell(`<h2>학생별 현황 · 오답 풀</h2>
+    ${students.map(s=>`<button class="student-btn" onclick='dashStudentDetail(${JSON.stringify(s)})'>${esc(s.name)}</button>`).join("")}`);
+};
+window.dashStudentDetail = async function(student){
+  T.tab="students";
+  const tests = await getTests();
+  const byId = Object.fromEntries(tests.map(t=>[t.id,t]));
+  const units = await getUnits();
+  const uTitle = Object.fromEntries(units.map(u=>[u.unit_no,u.title]));
+  const { data: atts, error } = await sb.from("grammar_attempts").select("*").eq("student_id", student.id).order("taken_at");
+  if(error) err(error);
+  const attIds = (atts||[]).map(a=>a.id);
+  let items = [];
+  if(attIds.length){
+    const { data, error: e2 } = await sb.from("grammar_attempt_items").select("*").in("attempt_id", attIds);
+    if(e2) err(e2); items = data||[];
+  }
+  // 수준별 정답률
+  const byLv = {};
+  items.forEach(it=>{ const t=byLv[it.level]=byLv[it.level]||{n:0,ok:0}; t.n++; if(it.correct) t.ok++; });
+  const lvRows = [1,2,3].filter(l=>byLv[l]).map(l=>{const v=byLv[l];
+    return `<tr><td>${LV[l]}</td><td class="${v.ok/v.n<0.5?"no":""}">${Math.round(v.ok/v.n*100)}%</td><td class="small">${v.ok}/${v.n}</td></tr>`;}).join("");
+  // 유닛별 정답률 (낮은 순)
+  const byU = {};
+  items.forEach(it=>{ const t=byU[it.unit_no]=byU[it.unit_no]||{n:0,ok:0}; t.n++; if(it.correct) t.ok++; });
+  const uRows = Object.entries(byU).sort((a,b)=>(a[1].ok/a[1].n)-(b[1].ok/b[1].n)).slice(0,10)
+    .map(([u,v])=>`<tr><td>U${String(u).padStart(2,"0")} ${esc(uTitle[u]||"")}</td><td class="${v.ok/v.n<0.5?"no":""}">${Math.round(v.ok/v.n*100)}%</td><td class="small">${v.ok}/${v.n}</td></tr>`).join("");
+  // 오답 풀
+  const wrongs = items.filter(it=>!it.correct);
+  const wrongRows = wrongs.sort((a,b)=>a.unit_no-b.unit_no)
+    .map(it=>`<tr><td>U${String(it.unit_no).padStart(2,"0")}</td><td>${LV[it.level]}</td>
+      <td>${it.answer?CN[it.answer]:"무응답"}</td>
+      <td><button class="btn-ghost btn-sm" onclick="showQ(${it.question_id})">보기</button></td></tr>`).join("");
+  dashShell(`<h2>${esc(student.name)}</h2>
+    <div class="statbox">응시 <b>${(atts||[]).length}회</b> · 누적 오답 <b>${wrongs.length}</b>문항</div>
+    <h2>시험지별 점수</h2>
+    <table><tr><th>시험지</th><th>점수</th><th>시각</th></tr>
+    ${(atts||[]).map(a=>{const t=byId[a.test_id]; return `<tr><td>${t?esc(t.label):""}</td><td><b>${a.score}</b>/${a.total}</td><td>${fmtDate(a.taken_at)}</td></tr>`;}).join("")||"<tr><td colspan=3>응시 없음</td></tr>"}</table>
+    <h2 style="margin-top:16px">수준별 정답률</h2>
+    <table><tr><th>수준</th><th>정답률</th><th>맞음/전체</th></tr>${lvRows||"<tr><td colspan=3>-</td></tr>"}</table>
+    <h2 style="margin-top:16px">취약 유닛 TOP10 <span class="small">(정답률 낮은 순)</span></h2>
+    <table><tr><th>유닛</th><th>정답률</th><th>맞음/전체</th></tr>${uRows||"<tr><td colspan=3>-</td></tr>"}</table>
+    <h2 style="margin-top:16px">오답 풀 (누적)</h2>
+    <table><tr><th>유닛</th><th>수준</th><th>내 답</th><th></th></tr>${wrongRows||"<tr><td colspan=4>오답 없음 🎉</td></tr>"}</table>
+    <div class="row"><button class="btn-ghost btn-sm" onclick="dashStudents()">← 학생 목록</button></div>`);
+};
+
+/* ---- 탭5: 학부모 리포트 ---- */
+window.dashReport = async function(studentId){
+  T.tab="report";
+  const { data: students, error } = await sb.from("students").select("*").eq("active",true).order("name");
+  if(error) err(error);
+  const sel = `<select onchange="dashReport(this.value)"><option value="">학생 선택...</option>
+    ${students.filter(s=>!isExcluded(s.name)).map(s=>`<option value="${s.id}" ${s.id===studentId?"selected":""}>${esc(s.name)}</option>`).join("")}</select>`;
+  if(!studentId){ dashShell(`<h2>학부모 리포트</h2><div class="row">${sel}</div>`); return; }
+  const student = students.find(s=>s.id===studentId);
+  const tests = await getTests();
+  const byId = Object.fromEntries(tests.map(t=>[t.id,t]));
+  const units = await getUnits();
+  const uTitle = Object.fromEntries(units.map(u=>[u.unit_no,u.title]));
+  const { data: atts } = await sb.from("grammar_attempts").select("*").eq("student_id", studentId).order("taken_at");
+  const attIds = (atts||[]).map(a=>a.id);
+  let items = [];
+  if(attIds.length){ const { data } = await sb.from("grammar_attempt_items").select("*").in("attempt_id", attIds); items = data||[]; }
+  // 반 평균 (첫 응시 기준, %)
+  const { data: allAtts } = await sb.from("grammar_attempts").select("student_id, test_id, score, total, taken_at, students(name)").order("taken_at");
+  const firstAll = {};
+  (allAtts||[]).filter(a=>!isExcluded(a.students?.name)).forEach(a=>{ const k=a.student_id+"_"+a.test_id; if(!(k in firstAll)) firstAll[k]=a.score/a.total*100; });
+  const classAvg = Object.values(firstAll).length ? Math.round(Object.values(firstAll).reduce((s,v)=>s+v,0)/Object.values(firstAll).length) : "-";
+  const myAvg = (atts||[]).length ? Math.round(atts.reduce((s,a)=>s+a.score/a.total*100,0)/atts.length) : "-";
+  const byU = {};
+  items.forEach(it=>{ const t=byU[it.unit_no]=byU[it.unit_no]||{n:0,ok:0}; t.n++; if(it.correct) t.ok++; });
+  const weak = Object.entries(byU).filter(([,v])=>v.n>=3).sort((a,b)=>(a[1].ok/a[1].n)-(b[1].ok/b[1].n)).slice(0,3);
+  const recent = (atts||[]).slice(-3);
+  const wrongs = items.filter(it=>!it.correct).length;
+  const today = new Date();
+  const txt =
+`[영어 문법과제 리포트] ${student.name}
+(${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()} 기준 · 교재: Grammar Zone 중등필수)
+
+■ 응시 현황: 총 ${(atts||[]).length}회 응시
+■ 최근 성적: ${recent.map(a=>{const t=byId[a.test_id]; return `${t?t.label:""} ${a.score}/${a.total}`;}).join(", ")||"응시 없음"}
+■ 평균 정답률: ${myAvg}% (반 평균 ${classAvg}%)
+■ 보완이 필요한 단원: ${weak.map(([u,v])=>`${uTitle[u]||"U"+u}(${Math.round(v.ok/v.n*100)}%)`).join(", ")||"데이터 부족"}
+■ 누적 오답: ${wrongs}문항 → 오답 문항은 해설과 함께 복습 자료로 관리하고 있습니다.
+
+진도를 나갈 때마다 배운 범위 그대로 평가가 진행되어, 단원별 이해도가 데이터로 쌓입니다. 궁금한 점은 언제든 연락 주세요!`;
+  dashShell(`<h2>학부모 리포트</h2><div class="row" style="margin-bottom:8px">${sel}</div>
+    <div class="copybox" id="rpt">${esc(txt)}</div>
+    <div class="row"><button class="btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('rpt').innerText).then(()=>alert('복사 완료! 문자/카톡에 붙여넣으세요.'))">📋 복사하기</button></div>`);
+};
+
+home();
+</script>
+</body>
+</html>
