@@ -67,7 +67,7 @@
 const CONFIG = {
   SUPABASE_URL: "https://xtxuozcbeqruuigeijsz.supabase.co",
   SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eHVvemNiZXFydXVpZ2VpanN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNjI4MzMsImV4cCI6MjA5ODczODgzM30.kuHunWODG6_lv3JajIMmr6Xw7yEORy-Dixs-EB4sYaM",
-  TEACHER_PIN: "5204",
+  TEACHER_PIN: "2580",
   EXCLUDE_NAMES: ["실험용","실험","테스트","test","딘"],
   RECENT_WARN_MIN: 30
 };
@@ -120,8 +120,7 @@ const testRange = t => t.unit_from===t.unit_to ? `Unit ${String(t.unit_from).pad
 /* ================= 학생: 홈 ================= */
 async function home(){
   app.innerHTML = `<div class="card"><h1>문법과제 ✏️</h1><div class="sub">불러오는 중...</div></div>`;
-  let { data: students, error } = await sb.from("students").select("*").eq("active", true).neq("track","interview").order("name");
-  if(error) ({ data: students, error } = await sb.from("students").select("*").eq("active", true).order("name"));
+  const { data: students, error } = await sb.from("students").select("*").eq("active", true).order("name");
   if(error) err(error);
   app.innerHTML = `
    <div class="card">
@@ -211,10 +210,13 @@ window.testConfirm = async function(student, testId){
   const test = tests.find(t=>t.id===testId);
   const { count } = await sb.from("grammar_attempts").select("id", {count:"exact", head:true}).eq("student_id", student.id).eq("test_id", testId);
   const nU = test.unit_to - test.unit_from + 1;
+  const { data: lvls } = await sb.from("grammar_questions").select("level").in("id", test.question_ids);
+  const lvTxt = [1,2,3].map(l=>({l, n:(lvls||[]).filter(q=>q.level===l).length})).filter(x=>x.n)
+    .map(x=>`${lvBadge(x.l)} ${x.n}문항`).join(" + ") || "5문항 × 유닛";
   app.innerHTML = `
    <div class="card">
      <h2>${test.ord}회 · ${esc(test.label)}</h2>
-     <div class="pill">${testRange(test)} — 유닛당 5문항 (${lvBadge(1)} 2문항 + ${lvBadge(2)} 2문항 + ${lvBadge(3)} 1문항) × ${nU}유닛 = <b>${test.question_ids.length}문항</b><br>
+     <div class="pill">${testRange(test)} — ${nU}유닛 · ${lvTxt} = <b>${test.question_ids.length}문항</b><br>
      <span class="small">권장 시간 약 ${Math.max(10, test.question_ids.length)}분 · 제출하면 바로 채점되고 오답 해설을 볼 수 있어요.</span></div>
      ${count?`<div class="flag amber">이미 ${count}회 응시했어요. 다시 풀면 기록은 남지만 통계에는 <b>첫 응시</b>가 반영돼요.</div>`:""}
      <div class="row"><button class="btn-primary" onclick='startTest(${JSON.stringify(student)}, ${testId})'>시험 시작</button></div>
@@ -307,34 +309,10 @@ function resultScreen(att, items){
   window.scrollTo(0,0);
 }
 
-
-/* 비밀번호 입력(마스킹) 모달 — prompt() 대체 */
-function askPin(label){
-  return new Promise(res=>{
-    const ov = document.createElement("div");
-    ov.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:9999";
-    ov.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:280px;box-shadow:0 10px 40px rgba(0,0,0,.25)">
-      <div style="font-weight:800;margin-bottom:10px">${label}</div>
-      <input id="_pinAsk" type="password" inputmode="numeric" maxlength="4" autocomplete="off"
-        style="width:100%;text-align:center;font-size:1.3rem;letter-spacing:.35em;padding:10px;border:2px solid #cbd5e1;border-radius:10px;box-sizing:border-box">
-      <div style="display:flex;gap:8px;margin-top:14px">
-        <button id="_pinCancel" style="flex:1;background:#eef1f8;border:none;border-radius:10px;padding:11px;font-size:.95rem;cursor:pointer">취소</button>
-        <button id="_pinOk" style="flex:1;background:#4f6ef7;color:#fff;border:none;border-radius:10px;padding:11px;font-weight:700;font-size:.95rem;cursor:pointer">확인</button>
-      </div></div>`;
-    document.body.appendChild(ov);
-    const inp = ov.querySelector("#_pinAsk");
-    const done = v => { ov.remove(); res(v); };
-    ov.querySelector("#_pinOk").onclick = ()=>done(inp.value.trim());
-    ov.querySelector("#_pinCancel").onclick = ()=>done(null);
-    inp.addEventListener("keydown", e=>{ if(e.key==="Enter") done(inp.value.trim()); });
-    inp.focus();
-  });
-}
 /* ================= 선생님 ================= */
-window.teacherLogin = async function(){
-  const pin = await askPin("선생님 비밀번호");
-  if(pin === null) return;
-  if(pin !== CONFIG.TEACHER_PIN){ return alert("비밀번호가 달라요"); }
+window.teacherLogin = function(){
+  const pin = prompt("선생님 비밀번호");
+  if(pin !== CONFIG.TEACHER_PIN){ if(pin!==null) alert("비밀번호가 달라요"); return; }
   T = { tab:"progress" };
   sb.channel("grammar_dash")
     .on("postgres_changes",{event:"*",schema:"public",table:"grammar_attempts"}, ()=>{ if(T.tab==="live") dashLive(); })
@@ -368,7 +346,7 @@ window.dashProgress = async function(){
   const opt = sel => units.map(u=>`<option value="${u.unit_no}" ${u.unit_no===sel?"selected":""}>U${String(u.unit_no).padStart(2,"0")} ${esc(u.title)}</option>`).join("");
   dashShell(`
     <h2>새 진도 입력 → 시험지 생성</h2>
-    <div class="pill">이번에 나간 진도 범위를 지정하면 해당 유닛 문제(유닛당 5문항: 중3×2 + 고1·2×2 + 고3+×1)로 시험지가 만들어져요.${covered.size?`<br><span class="small">지금까지 나간 진도: U${String(Math.min(...covered)).padStart(2,"0")}~U${String(maxCovered).padStart(2,"0")} (시험지 ${tests.length}장)</span>`:""}</div>
+    <div class="pill">이번에 나간 진도 범위를 지정하면 해당 유닛의 활성 문항(유닛당 5문항, 난이도 구성은 유닛별 설정에 따름)으로 시험지가 만들어져요.${covered.size?`<br><span class="small">지금까지 나간 진도: U${String(Math.min(...covered)).padStart(2,"0")}~U${String(maxCovered).padStart(2,"0")} (시험지 ${tests.length}장)</span>`:""}</div>
     <table style="margin-bottom:4px"><tr>
       <td style="border:none; padding:4px">시작<br><select id="uFrom" onchange="updPreview()">${opt(defFrom)}</select></td>
       <td style="border:none; padding:4px">끝<br><select id="uTo" onchange="updPreview()">${opt(defFrom)}</select></td>
