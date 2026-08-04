@@ -67,7 +67,6 @@
 const CONFIG = {
   SUPABASE_URL: "https://xtxuozcbeqruuigeijsz.supabase.co",
   SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eHVvemNiZXFydXVpZ2VpanN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNjI4MzMsImV4cCI6MjA5ODczODgzM30.kuHunWODG6_lv3JajIMmr6Xw7yEORy-Dixs-EB4sYaM",
-  TEACHER_PIN: "2580",
   EXCLUDE_NAMES: ["실험용","실험","테스트","test","딘"],
   RECENT_WARN_MIN: 30
 };
@@ -310,9 +309,13 @@ function resultScreen(att, items){
 }
 
 /* ================= 선생님 ================= */
-window.teacherLogin = function(){
+/* 비밀번호는 서버(Supabase RPC)에서만 대조 — 화면/코드에 노출 안 됨 */
+window.teacherLogin = async function(){
   const pin = prompt("선생님 비밀번호");
-  if(pin !== CONFIG.TEACHER_PIN){ if(pin!==null) alert("비밀번호가 달라요"); return; }
+  if(pin === null) return;
+  const { data: ok, error } = await sb.rpc("teacher_pin_verify", { p_pin: String(pin).trim() });
+  if(error){ return alert("비밀번호 확인 실패: " + error.message); }
+  if(!ok){ return alert("비밀번호가 달라요"); }
   T = { tab:"progress" };
   sb.channel("grammar_dash")
     .on("postgres_changes",{event:"*",schema:"public",table:"grammar_attempts"}, ()=>{ if(T.tab==="live") dashLive(); })
