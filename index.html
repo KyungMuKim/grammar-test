@@ -309,9 +309,31 @@ function resultScreen(att, items){
 }
 
 /* ================= 선생님 ================= */
+/* 비밀번호 입력(마스킹) 모달 — prompt() 대체 */
+function askPin(label){
+  return new Promise(res=>{
+    const ov = document.createElement("div");
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:9999";
+    ov.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:280px;box-shadow:0 10px 40px rgba(0,0,0,.25)">
+      <div style="font-weight:800;margin-bottom:10px">${label}</div>
+      <input id="_pinAsk" type="password" inputmode="numeric" maxlength="4" autocomplete="off"
+        style="width:100%;text-align:center;font-size:1.3rem;letter-spacing:.35em;padding:10px;border:2px solid #cbd5e1;border-radius:10px;box-sizing:border-box">
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button id="_pinCancel" style="flex:1;background:#eef1f8;border:none;border-radius:10px;padding:11px;font-size:.95rem;cursor:pointer">취소</button>
+        <button id="_pinOk" style="flex:1;background:#4f6ef7;color:#fff;border:none;border-radius:10px;padding:11px;font-weight:700;font-size:.95rem;cursor:pointer">확인</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    const inp = ov.querySelector("#_pinAsk");
+    const done = v => { ov.remove(); res(v); };
+    ov.querySelector("#_pinOk").onclick = ()=>done(inp.value.trim());
+    ov.querySelector("#_pinCancel").onclick = ()=>done(null);
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter") done(inp.value.trim()); });
+    inp.focus();
+  });
+}
 /* 비밀번호는 서버(Supabase RPC)에서만 대조 — 화면/코드에 노출 안 됨 */
 window.teacherLogin = async function(){
-  const pin = prompt("선생님 비밀번호");
+  const pin = await askPin("선생님 비밀번호");
   if(pin === null) return;
   const { data: ok, error } = await sb.rpc("teacher_pin_verify", { p_pin: String(pin).trim() });
   if(error){ return alert("비밀번호 확인 실패: " + error.message); }
