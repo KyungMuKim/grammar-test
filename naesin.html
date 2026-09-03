@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>내신문법 통합대비</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --bg:#f4f6fb; --card:#fff; --ink:#1c2333; --sub:#68718a; --pri:#0f4c81; --ok:#16a34a; --no:#dc2626; --line:#e5e9f2; --warn:#b45309; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:var(--bg); color:var(--ink); padding:16px; max-width:860px; margin:0 auto;}
+  .card{background:var(--card); border-radius:16px; padding:22px; box-shadow:0 2px 10px rgba(20,30,60,.06); margin-bottom:14px;}
+  h1{font-size:1.5rem; margin-bottom:6px;} h2{font-size:1.2rem; margin-bottom:8px;} h3{font-size:1.02rem; margin:14px 0 6px;}
+  .sub{color:var(--sub); font-size:.9rem; margin-bottom:14px;}
+  .small{color:var(--sub); font-size:.8rem;}
+  .pill{background:#eaf1f8; border-radius:10px; padding:12px 14px; font-size:.95rem; margin:10px 0; line-height:1.6;}
+  .btn-primary{background:var(--pri); color:#fff; border:none; border-radius:10px; padding:13px 22px; font-size:1.05rem; font-weight:700; cursor:pointer; width:100%;}
+  .btn-primary:disabled{opacity:.45; cursor:default;}
+  .btn-ghost{background:#eef1f8; color:var(--ink); border:none; border-radius:10px; padding:10px 16px; font-size:.95rem; cursor:pointer;}
+  .btn-sm{padding:6px 10px; font-size:.82rem; border-radius:8px;}
+  .row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .row .btn-primary{flex:1; width:auto;}
+  .student-btn{display:inline-block; background:#eaf1f8; border:2px solid transparent; border-radius:12px; padding:14px 18px; margin:5px 4px; font-size:1.05rem; font-weight:700; cursor:pointer;}
+  .exam-btn{display:flex; justify-content:space-between; align-items:center; width:100%; background:#fff; border:2px solid var(--line); border-radius:12px; padding:14px 16px; margin:8px 0; font-size:1rem; cursor:pointer; text-align:left;}
+  .exam-btn .done{color:var(--ok); font-weight:800;}
+  .progress{height:8px; background:var(--line); border-radius:4px; overflow:hidden; margin:8px 0 4px;}
+  .progress div{height:100%; background:var(--pri); transition:width .2s;}
+  .flag{background:#f0fdf4; color:#166534; font-size:.82rem; border-radius:8px; padding:8px 10px; margin:8px 0;}
+  .flag.amber{background:#fffbeb; color:#92400e;}
+  .qbox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; margin:10px 0; font-size:1rem; line-height:1.8; white-space:pre-wrap;}
+  .qbox u{text-underline-offset:3px;}
+  .choicesV{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
+  .choiceV{padding:12px 14px; font-size:.98rem; border:2px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; text-align:left; line-height:1.5;}
+  .choiceV.sel{border-color:var(--pri); background:#eaf1f8; color:var(--pri); font-weight:700;}
+  .navgrid{display:grid; grid-template-columns:repeat(10,1fr); gap:5px; margin:10px 0;}
+  .navq{padding:7px 0; text-align:center; border-radius:8px; background:#eef1f8; font-weight:700; font-size:.8rem; cursor:pointer; border:2px solid transparent;}
+  .navq.answered{background:#dcfce7; color:#166534;}
+  .navq.cur{border-color:var(--pri);}
+  .navq.w{background:#fef3c7;} .navq.w.answered{background:#dcfce7;}
+  .bar{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;}
+  .done-big{font-size:2.6rem; text-align:center; margin:18px 0 6px;}
+  textarea, input.ans{width:100%; font-size:1rem; padding:10px; border:2px solid #cbd5e1; border-radius:10px; font-family:inherit; margin:6px 0;}
+  textarea{min-height:70px;}
+  .blab{font-size:.9rem; color:var(--sub); margin-top:8px;}
+  table{width:100%; border-collapse:collapse; font-size:.9rem; margin:8px 0;}
+  th,td{border-bottom:1px solid var(--line); padding:7px 6px; text-align:left; vertical-align:top;}
+  th{background:#f8fafc; font-size:.82rem; color:var(--sub);}
+  td.no{color:var(--no); font-weight:700;}
+  .statbox{display:flex; gap:14px; flex-wrap:wrap; background:#eaf1f8; border-radius:10px; padding:10px 14px; margin:8px 0;}
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .tab{background:#eef1f8; border:none; border-radius:999px; padding:8px 14px; font-size:.9rem; cursor:pointer;}
+  .tab.on{background:var(--pri); color:#fff; font-weight:700;}
+  .bargraph{height:10px; background:var(--line); border-radius:5px; overflow:hidden;}
+  .bargraph div{height:100%; background:var(--ok);}
+  .bargraph.bad div{background:var(--no);}
+  select{padding:8px; border-radius:8px; border:2px solid #cbd5e1; font-size:.95rem;}
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:9;}
+  .modal{background:#fff; border-radius:14px; padding:20px; width:min(92vw,360px);}
+  .grade-in{width:64px; text-align:center; padding:6px; border:2px solid #cbd5e1; border-radius:8px; font-size:1rem;}
+  .ansbox{background:#f8fafc; border-left:4px solid var(--pri); padding:8px 10px; margin:6px 0; white-space:pre-wrap; font-size:.95rem;}
+  .model{background:#fffbeb; border-left:4px solid var(--warn); padding:8px 10px; margin:6px 0; font-size:.9rem;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ================= 설정 (문법과제와 동일 Supabase) ================= */
+const CONFIG = {
+  SUPABASE_URL: "https://xtxuozcbeqruuigeijsz.supabase.co",
+  SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eHVvemNiZXFydXVpZ2VpanN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNjI4MzMsImV4cCI6MjA5ODczODgzM30.kuHunWODG6_lv3JajIMmr6Xw7yEORy-Dixs-EB4sYaM",
+  TEST_LABEL_PREFIX: "내신문법 통합대비",   // grammar_tests.label 이 이 문자열로 시작하는 시험지만 표시
+  MC_POINTS: 4,                              // 객관식 문항당 배점 (14문항 × 4 = 56)
+  EXCLUDE_NAMES: ["실험용","실험","테스트","test","딘"],
+  SHOW_RESULT_TO_STUDENT: false              // true 로 바꾸면 제출 직후 객관식 점수를 학생에게 보여줌
+};
+const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+const app = document.getElementById("app");
+let S = {}, T = { tab:"test" }, TESTS = null, QCACHE = {}, WCACHE = {};
+const UNIT_NAMES = {3:"수여동사(4↔3형식)",4:"감각동사+형용사",5:"be/일반동사·수일치·There is",15:"비교급·최상급",18:"과거시제",20:"현재진행형",24:"조동사·be going to",28:"to부정사 명사적 용법",32:"동명사",33:"동명사 vs to부정사",39:"접속사 that",40:"접속사 when(시간 부사절)"};
+
+/* ================= 공통 ================= */
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const qhtml = s => esc(s).replace(/&lt;(\/?)(u|b)&gt;/g, "<$1$2>");
+const CN = ["","①","②","③","④","⑤"];
+const fmtDate = d => { const x=new Date(d); return `${x.getMonth()+1}/${x.getDate()} ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`; };
+const isExcluded = n => CONFIG.EXCLUDE_NAMES.some(x=>String(n||"").includes(x));
+function err(e){ alert("오류: " + (e.message||e)); throw e; }
+const draftKey = (sid,tid) => `naesin_draft_${sid}_${tid}`;
+function saveDraft(){ try{ localStorage.setItem(draftKey(S.student.id,S.test.id), JSON.stringify({answers:S.answers, written:S.written, idx:S.idx, startedAt:S.startedAt})); }catch(e){} }
+function loadDraft(sid,tid){ try{ const r=localStorage.getItem(draftKey(sid,tid)); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function clearDraft(sid,tid){ try{ localStorage.removeItem(draftKey(sid,tid)); }catch(e){} }
+
+async function getTests(force){
+  if(TESTS && !force) return TESTS;
+  const { data, error } = await sb.from("grammar_tests").select("*").like("label", CONFIG.TEST_LABEL_PREFIX+"%").order("id");
+  if(error) err(error);
+  TESTS = data||[]; return TESTS;
+}
+async function getQuestions(ids){
+  const need = ids.filter(id=>!QCACHE[id]);
+  if(need.length){
+    const { data, error } = await sb.from("grammar_questions").select("id, unit_no, level, qtype, stem, choices").in("id", need);
+    if(error) err(error);
+    (data||[]).forEach(q=>QCACHE[q.id]=q);
+  }
+  return ids.map(id=>QCACHE[id]).filter(Boolean);
+}
+async function getWritten(testId){
+  if(WCACHE[testId]) return WCACHE[testId];
+  const { data, error } = await sb.from("grammar_written_questions").select("id, test_id, seq, unit_no, stem, blanks, points").eq("test_id", testId).order("seq");
+  if(error) err(error);
+  WCACHE[testId] = data||[]; return WCACHE[testId];
+}
+const maxTotal = (test, ws) => test.question_ids.length*CONFIG.MC_POINTS + ws.reduce((s,w)=>s+w.points,0);
+
+/* ================= 학생: 홈 ================= */
+async function home(){
+  app.innerHTML = `<div class="card"><h1>내신문법 통합대비 📘</h1><div class="sub">불러오는 중...</div></div>`;
+  const { data: students, error } = await sb.from("students").select("*").eq("active", true).order("name");
+  if(error) err(error);
+  app.innerHTML = `
+   <div class="card">
+     <h1>내신문법 통합대비 📘</h1>
+     <div class="sub">2학기 중간고사 통합 문법 실전 TEST · 20문항(객관식 14 + 서술형 6) — 이름을 선택하세요</div>
+     ${students.map(s=>`<button class="student-btn" onclick='pickStudent(${JSON.stringify(s)})'>${esc(s.name)}</button>`).join("") || '<div class="pill">등록된 학생이 없어요.</div>'}
+     <div class="row"><button class="btn-ghost btn-sm" onclick="teacherLogin()">🔑 선생님</button></div>
+   </div>`;
+}
+
+window.pickStudent = function(student){
+  app.innerHTML = `
+   <div class="card">
+     <h2>본인 확인</h2>
+     <div class="sub">아래 이름이 <b>본인</b>이 맞는지 확인하고, <b>비밀번호 4자리</b>를 입력하세요. (단어시험과 같은 비밀번호)</div>
+     <div style="font-size:2.2rem; font-weight:900; text-align:center; margin:14px 0">${esc(student.name)}</div>
+     <div class="row" style="justify-content:center">
+       <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"
+         placeholder="비밀번호 4자리" style="text-align:center; font-size:1.3rem; letter-spacing:.35em; width:190px; padding:10px; border:2px solid #cbd5e1; border-radius:10px">
+     </div>
+     <div class="row"><button class="btn-primary" onclick='pinGo(${JSON.stringify(student)})'>네, ${esc(student.name)} 입니다 →</button></div>
+     <div class="row"><button class="btn-ghost btn-sm" onclick="home()">← 아니에요, 이름 다시 선택</button></div>
+   </div>`;
+  const inp = document.getElementById("pinInput");
+  inp.focus();
+  inp.addEventListener("keydown", e=>{ if(e.key==="Enter") pinGo(student); });
+};
+
+window.pinGo = async function(student){
+  const inp = document.getElementById("pinInput");
+  const pin = (inp && inp.value || "").trim();
+  if(!/^\d{4}$/.test(pin)){ alert("비밀번호 4자리(숫자)를 입력하세요"); if(inp) inp.focus(); return; }
+  const btns = document.querySelectorAll("button");
+  btns.forEach(b=>b.disabled=true);
+  const { data: ok, error } = await sb.rpc("student_pin_verify", { p_student_id: student.id, p_pin: pin });
+  if(error){ btns.forEach(b=>b.disabled=false); return alert("오류: "+error.message); }
+  if(!ok){ btns.forEach(b=>b.disabled=false); if(inp){ inp.value=""; inp.focus(); } return alert("비밀번호가 달라요. 본인 이름이 맞는지, 비밀번호를 다시 확인하세요."); }
+  testList(student);
+};
+
+/* ================= 학생: 회차 선택 ================= */
+window.testList = async function(student){
+  app.innerHTML = `<div class="card"><h2>${esc(student.name)}</h2><div class="sub">시험지 불러오는 중...</div></div>`;
+  const tests = (await getTests(true)).filter(t=>t.active);
+  const { data: atts, error } = await sb.from("grammar_attempts").select("test_id, score, total, taken_at").eq("student_id", student.id).in("test_id", tests.map(t=>t.id)).order("taken_at");
+  if(error) err(error);
+  const done = {}; (atts||[]).forEach(a=>{ if(!(a.test_id in done)) done[a.test_id]=a; });
+  app.innerHTML = `
+   <div class="card">
+     <h2>${esc(student.name)}</h2>
+     <div class="sub">응시할 회차를 선택하세요 · 완료 ${tests.filter(t=>done[t.id]).length}/${tests.length}</div>
+     ${tests.map(t=>{
+        const d = done[t.id]; const dr = loadDraft(student.id, t.id);
+        return `<button class="exam-btn" onclick='testConfirm(${JSON.stringify(student)}, ${t.id})'>
+          <span>${esc(t.label)}<br><span class="small">객관식 ${t.question_ids.length} + 서술형 6 · 100점 만점${dr&&!d?" · 💾 임시저장 있음":""}</span></span>
+          <span class="${d?"done":"small"}">${d?"✅ 제출 완료":"미응시"}</span></button>`;
+      }).join("") || '<div class="pill">아직 열린 시험지가 없어요.</div>'}
+     <div class="row"><button class="btn-ghost btn-sm" onclick="home()">← 이름 다시 선택</button></div>
+   </div>`;
+};
+
+window.testConfirm = async function(student, testId){
+  const test = (await getTests()).find(t=>t.id===testId);
+  const ws = await getWritten(testId);
+  const { count } = await sb.from("grammar_attempts").select("id", {count:"exact", head:true}).eq("student_id", student.id).eq("test_id", testId);
+  const dr = loadDraft(student.id, testId);
+  app.innerHTML = `
+   <div class="card">
+     <h2>${esc(test.label)}</h2>
+     <div class="pill"><b>객관식 ${test.question_ids.length}문항(각 ${CONFIG.MC_POINTS}점) + 서술형 ${ws.length}문항(${ws.map(w=>w.points).join("·")}점) = ${maxTotal(test,ws)}점</b> · 권장 시간 35분<br>
+     <span class="small">아무것도 보지 말고 혼자 힘으로 푸세요. 서술형은 답 문장을 직접 입력합니다. 제출하면 답을 바꿀 수 없고, 채점 결과는 수업 시간에 함께 확인합니다.</span></div>
+     ${count?`<div class="flag amber">이미 ${count}회 제출했어요. 다시 풀면 기록은 남지만 통계에는 <b>첫 제출</b>이 반영돼요.</div>`:""}
+     <div class="row"><button class="btn-primary" onclick='startTest(${JSON.stringify(student)}, ${testId}, false)'>시험 시작</button></div>
+     ${dr?`<div class="row"><button class="btn-ghost" onclick='startTest(${JSON.stringify(student)}, ${testId}, true)'>💾 진행하던 시험 이어서 하기</button></div>`:""}
+     <div class="row"><button class="btn-ghost btn-sm" onclick='testList(${JSON.stringify(student)})'>← 회차 다시 선택</button></div>
+   </div>`;
+};
+
+window.startTest = async function(student, testId, resume){
+  const test = (await getTests()).find(t=>t.id===testId);
+  app.innerHTML = `<div class="card"><h2>문제 불러오는 중...</h2></div>`;
+  const qs = await getQuestions(test.question_ids);
+  const ws = await getWritten(testId);
+  const items = [...qs.map(q=>({kind:"mc", ...q})), ...ws.map(w=>({kind:"w", ...w}))];
+  const d = resume ? loadDraft(student.id, testId) : null;
+  S = { student, test, qs, ws, items,
+        answers: d ? d.answers : Object.fromEntries(qs.map(q=>[q.id,0])),
+        written: d ? d.written : Object.fromEntries(ws.map(w=>[w.id,""])),
+        idx: d ? (d.idx||0) : 0, startedAt: d ? (d.startedAt||Date.now()) : Date.now() };
+  saveDraft();
+  question();
+};
+
+/* ================= 학생: 문항 화면 ================= */
+const isAnswered = it => it.kind==="mc" ? S.answers[it.id]>0 : (S.written[it.id]||"").trim().length>0;
+function question(){
+  const i = S.idx, it = S.items[i], total = S.items.length;
+  const answered = S.items.filter(isAnswered).length;
+  const mins = Math.floor((Date.now()-S.startedAt)/60000);
+  let body;
+  if(it.kind==="mc"){
+    body = `<div class="qbox">${qhtml(it.stem)}</div>
+      <div class="choicesV">${it.choices.map((c,ci)=>`<button class="choiceV ${S.answers[it.id]===ci+1?"sel":""}" onclick="pickAns(${it.id},${ci+1})">${CN[ci+1]} ${qhtml(c)}</button>`).join("")}</div>`;
+  } else {
+    body = `<div class="qbox">${qhtml(it.stem)}</div>
+      <div class="blab">✍️ 서술형 [${it.points}점] — 아래 칸에 답을 입력하세요.${(it.blanks||[]).length>1?" 번호를 붙여 순서대로 쓰세요.":""}</div>
+      ${(it.blanks||[]).map(b=>`<div class="small">${esc(b)}</div>`).join("")}
+      <textarea id="wIn" placeholder="답을 입력하세요" oninput="pickW(${it.id}, this.value)">${esc(S.written[it.id]||"")}</textarea>`;
+  }
+  app.innerHTML = `
+   <div class="card">
+     <div class="bar"><b>${i+1}번 <span class="small">/ ${total}${it.kind==="w"?" · 서술형":""}</span></b><span class="small">${answered}/${total} 응답 · ${mins}분</span></div>
+     <div class="progress"><div style="width:${(answered/total*100).toFixed(0)}%"></div></div>
+     <div class="navgrid">${S.items.map((x,j)=>`<div class="navq ${x.kind==="w"?"w":""} ${isAnswered(x)?"answered":""} ${j===i?"cur":""}" onclick="goQ(${j})">${j+1}</div>`).join("")}</div>
+     ${body}
+     <div class="row">
+       <button class="btn-ghost" onclick="goQ(${i-1})" ${i===0?"disabled":""}>← 이전</button>
+       ${i<total-1 ? `<button class="btn-primary" onclick="goQ(${i+1})">다음 →</button>` : `<button class="btn-primary" onclick="submitTest()">제출하기 ✅</button>`}
+     </div>
+     <div class="row"><button class="btn-ghost btn-sm" onclick="quitTest()">중단 (임시저장)</button></div>
+   </div>`;
+  window.scrollTo(0,0);
+}
+window.goQ = function(j){ if(j<0||j>=S.items.length) return; S.idx=j; saveDraft(); question(); };
+window.pickAns = function(qid,c){ S.answers[qid]=c; saveDraft(); if(S.idx<S.items.length-1) S.idx++; question(); };
+window.pickW = function(wid,v){ S.written[wid]=v; saveDraft(); };
+window.quitTest = function(){ saveDraft(); alert("임시저장 됐어요. 다음에 이름을 누르면 이어서 볼 수 있어요."); home(); };
+
+/* ================= 제출 (객관식 자동채점 · 서술형은 선생님 채점) ================= */
+window.submitTest = async function(){
+  const blank = S.items.map((it,j)=>isAnswered(it)?null:j+1).filter(Boolean);
+  if(blank.length && !confirm(`아직 안 푼 문항이 있어요: ${blank.join(", ")}번\n그래도 제출할까요? (무응답은 오답 처리)`)) return;
+  if(!confirm("제출하면 답을 바꿀 수 없어요. 제출할까요?")) return;
+  app.innerHTML = `<div class="card"><h2>제출 중...</h2></div>`;
+  const { data: keys, error: ke } = await sb.from("grammar_questions").select("id, answer").in("id", S.qs.map(q=>q.id));
+  if(ke) err(ke);
+  const ans = {}; (keys||[]).forEach(k=>ans[k.id]=k.answer);
+  let score = 0;
+  const items = S.qs.map((q,j)=>{ const a=S.answers[q.id]||null; const ok=a===ans[q.id]; if(ok) score++;
+    return { question_id:q.id, unit_no:q.unit_no, level:q.level, answer:a, correct:ok, seq:j }; });
+  const dur = Math.round((Date.now()-S.startedAt)/1000);
+  const { data: att, error } = await sb.from("grammar_attempts")
+    .insert({ student_id:S.student.id, test_id:S.test.id, score, total:S.qs.length, duration_sec:dur }).select().single();
+  if(error) err(error);
+  const { error: e2 } = await sb.from("grammar_attempt_items").insert(items.map(it=>({ ...it, attempt_id:att.id })));
+  if(e2) err(e2);
+  const { error: e3 } = await sb.from("grammar_written_answers").insert(S.ws.map(w=>({ attempt_id:att.id, wq_id:w.id, answer:(S.written[w.id]||"").trim()||null })));
+  if(e3) err(e3);
+  clearDraft(S.student.id, S.test.id);
+  doneScreen(att);
+};
+function doneScreen(att){
+  app.innerHTML = `
+   <div class="card">
+     <div class="done-big">✅</div>
+     <h2 style="text-align:center">제출 완료!</h2>
+     <div class="sub" style="text-align:center">${esc(S.student.name)} · ${esc(S.test.label)} · ${Math.floor(att.duration_sec/60)}분 ${att.duration_sec%60}초</div>
+     ${CONFIG.SHOW_RESULT_TO_STUDENT?`<div class="pill" style="text-align:center">객관식 <b>${att.score}/${att.total}</b> · 서술형은 선생님 채점 후 확인</div>`:""}
+     <div class="pill" style="text-align:center">수고했어요. 서술형 채점 후 결과와 해설을 <b>수업 시간에 함께</b> 확인합니다.</div>
+     <div class="row"><button class="btn-ghost" onclick="home()">처음으로</button></div>
+   </div>`;
+  window.scrollTo(0,0);
+}
+
+/* ================= 선생님 ================= */
+function askPin(label){
+  return new Promise(res=>{
+    const bg=document.createElement("div"); bg.className="modal-bg";
+    bg.innerHTML=`<div class="modal"><div style="font-weight:800;margin-bottom:10px">${label}</div>
+      <input type="password" id="tpin" inputmode="numeric" autocomplete="off" style="width:100%;font-size:1.2rem;padding:10px;border:2px solid #cbd5e1;border-radius:10px;text-align:center;letter-spacing:.3em">
+      <div class="row"><button class="btn-primary" id="tok">확인</button><button class="btn-ghost" id="tcancel">취소</button></div></div>`;
+    document.body.appendChild(bg);
+    const inp=bg.querySelector("#tpin"); inp.focus();
+    const done=v=>{ bg.remove(); res(v); };
+    bg.querySelector("#tok").onclick=()=>done(inp.value);
+    bg.querySelector("#tcancel").onclick=()=>done(null);
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter") done(inp.value); });
+  });
+}
+window.teacherLogin = async function(){
+  const pin = await askPin("선생님 비밀번호");
+  if(pin===null) return;
+  const { data: ok, error } = await sb.rpc("teacher_pin_verify", { p_pin: String(pin).trim() });
+  if(error) return alert("오류: "+error.message);
+  if(!ok) return alert("비밀번호가 달라요.");
+  T = { tab:"test" };
+  dashTest();
+};
+function dashShell(inner){
+  const tabs = [["test","회차별 통계"],["grade","서술형 채점"],["students","학생별"],["units","문법 포인트별"]];
+  app.innerHTML = `<div class="card">
+    <div class="bar"><h1>내신문법 통합대비 · 선생님</h1><button class="btn-ghost btn-sm" onclick="home()">나가기</button></div>
+    <div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${T.tab===k?"on":""}" onclick="T.tab='${k}';dash${k[0].toUpperCase()+k.slice(1)}()">${l}</button>`).join("")}</div>
+    ${inner}</div>`;
+}
+async function loadTestData(testId){
+  const test = (await getTests()).find(t=>t.id===testId);
+  const ws = await getWritten(testId);
+  await getQuestions(test.question_ids);
+  const { data: atts, error } = await sb.from("grammar_attempts").select("id, student_id, score, total, taken_at, duration_sec, students(name)").eq("test_id", testId).order("taken_at");
+  if(error) err(error);
+  const firstBy = {};
+  (atts||[]).filter(a=>!isExcluded(a.students?.name)).forEach(a=>{ if(!(a.student_id in firstBy)) firstBy[a.student_id]=a; });
+  const first = Object.values(firstBy);
+  const attIds = first.map(a=>a.id);
+  let items = [], wans = [];
+  if(attIds.length){
+    const r1 = await sb.from("grammar_attempt_items").select("attempt_id, question_id, unit_no, answer, correct, seq").in("attempt_id", attIds); if(r1.error) err(r1.error); items = r1.data||[];
+    const r2 = await sb.from("grammar_written_answers").select("id, attempt_id, wq_id, answer, score").in("attempt_id", attIds); if(r2.error) err(r2.error); wans = r2.data||[];
+  }
+  first.forEach(a=>{ const mine = wans.filter(w=>w.attempt_id===a.id); a.wGraded = mine.filter(w=>w.score!=null).length; a.wScore = mine.reduce((s,w)=>s+(w.score||0),0); a.total100 = a.score*CONFIG.MC_POINTS + a.wScore; });
+  return { test, ws, first, items, wans, max: maxTotal(test, ws) };
+}
+const testSelect = (tests, cur, fn) => `<select onchange="${fn}(Number(this.value))">${tests.map(t=>`<option value="${t.id}" ${t.id===cur?"selected":""}>${esc(t.label)}</option>`).join("")}</select>`;
+
+window.dashTest = async function(testId){
+  T.tab="test";
+  const tests = await getTests();
+  testId = testId || T.testId || tests[0]?.id; T.testId = testId;
+  if(!testId){ dashShell(`<div class="pill">시험지가 없어요. naesin_setup.sql 을 먼저 실행하세요.</div>`); return; }
+  const D = await loadTestData(testId);
+  const byQ = {}; D.test.question_ids.forEach(id=>byQ[id]={n:0,wrong:0,dist:[0,0,0,0,0,0],seq:0});
+  D.items.forEach(it=>{ const b=byQ[it.question_id]; if(!b) return; b.n++; b.seq=it.seq; if(!it.correct) b.wrong++; if(it.answer) b.dist[it.answer]++; });
+  const byW = {}; D.ws.forEach(w=>byW[w.id]={n:0,graded:0,sum:0});
+  D.wans.forEach(w=>{ const b=byW[w.wq_id]; if(!b) return; b.n++; if(w.score!=null){ b.graded++; b.sum+=w.score; } });
+  const sortedQ = [...D.test.question_ids].sort((a,b)=>(byQ[b].wrong/(byQ[b].n||1))-(byQ[a].wrong/(byQ[a].n||1)));
+  const n = D.first.length;
+  const avgMC = n ? (D.first.reduce((s,a)=>s+a.score,0)/n).toFixed(1) : "-";
+  const avg100 = n ? (D.first.reduce((s,a)=>s+a.total100,0)/n).toFixed(1) : "-";
+  const { data: keys } = await sb.from("grammar_questions").select("id, answer").in("id", D.test.question_ids); const ansOf={}; (keys||[]).forEach(k=>ansOf[k.id]=k.answer);
+  dashShell(`<div class="row" style="margin-bottom:8px">${testSelect(tests, testId, "dashTest")}</div>
+    <div class="statbox"><span>응시 <b>${n}명</b></span><span>객관식 평균 <b>${avgMC}</b>/${D.test.question_ids.length}</span><span>총점 평균 <b>${avg100}</b>/${D.max}</span><span class="small">※ 서술형 미채점분은 0점으로 계산</span></div>
+    <table><tr><th>학생</th><th>객관식</th><th>서술형</th><th>총점</th><th>소요</th><th>제출 시각</th></tr>
+    ${D.first.sort((a,b)=>b.total100-a.total100).map(a=>`<tr><td>${esc(a.students?.name)}</td><td><b>${a.score}</b>/${a.total}</td>
+      <td>${a.wGraded===D.ws.length?`<b>${a.wScore}</b>`:`<span class="small">${a.wScore} (채점 ${a.wGraded}/${D.ws.length})</span>`}</td>
+      <td><b>${a.total100}</b>/${D.max}</td><td class="small">${Math.floor((a.duration_sec||0)/60)}분</td><td class="small">${fmtDate(a.taken_at)}</td></tr>`).join("") || "<tr><td colspan=6>응시 없음</td></tr>"}</table>
+    ${n?`<h3>객관식 문항별 오답률 <span class="small">(해설 우선순위)</span></h3>
+    <table><tr><th>번호</th><th>문법 포인트</th><th>정답</th><th>오답률</th><th>선지 분포</th><th></th></tr>
+    ${sortedQ.map(id=>{ const b=byQ[id], q=QCACHE[id]; const r=b.n?Math.round(b.wrong/b.n*100):0;
+      return `<tr><td><b>${b.seq+1}</b></td><td class="small">${esc(UNIT_NAMES[q.unit_no]||("U"+q.unit_no))}</td><td>${CN[ansOf[id]]}</td>
+        <td class="${r>=50?"no":""}">${r}% (${b.wrong}/${b.n})</td><td class="small">${[1,2,3,4,5].map(c=>`${CN[c]}${b.dist[c]}`).join(" ")}</td>
+        <td><button class="btn-ghost btn-sm" onclick="showQ(${id})">보기</button></td></tr>`; }).join("")}</table>
+    <h3>서술형 문항별 평균</h3>
+    <table><tr><th>번호</th><th>문법 포인트</th><th>배점</th><th>채점</th><th>평균</th><th></th></tr>
+    ${D.ws.map(w=>{ const b=byW[w.id]; return `<tr><td><b>${w.seq}</b></td><td class="small">${esc(UNIT_NAMES[w.unit_no]||("U"+w.unit_no))}</td><td>${w.points}</td><td>${b.graded}/${b.n}</td>
+      <td>${b.graded?(b.sum/b.graded).toFixed(1):"-"}</td><td><button class="btn-ghost btn-sm" onclick="showW(${w.id})">보기</button></td></tr>`; }).join("")}</table>`:""}`);
+};
+window.showQ = async function(qid){
+  const { data: q } = await sb.from("grammar_questions").select("*").eq("id", qid).single(); if(!q) return;
+  const w = window.open("", "_blank");
+  w.document.write(`<body style="max-width:720px;margin:20px auto;font-family:sans-serif;line-height:1.8"><h3>${esc(UNIT_NAMES[q.unit_no]||"")} · ${esc(q.qtype)}</h3>
+    <div style="white-space:pre-wrap;border:1px solid #ddd;border-radius:8px;padding:16px">${qhtml(q.stem)}</div>
+    <p>${q.choices.map((c,ci)=>`${CN[ci+1]} ${qhtml(c)}`).join("<br>")}</p><p><b>정답: ${CN[q.answer]}</b></p>
+    <p style="background:#fffbeb;padding:12px;border-radius:8px">💡 ${esc(q.explanation)}</p></body>`);
+};
+window.showW = async function(wid){
+  const { data: q } = await sb.from("grammar_written_questions").select("*").eq("id", wid).single(); if(!q) return;
+  const w = window.open("", "_blank");
+  w.document.write(`<body style="max-width:720px;margin:20px auto;font-family:sans-serif;line-height:1.8"><h3>서술형 ${q.seq}번 · ${esc(UNIT_NAMES[q.unit_no]||"")} · ${q.points}점</h3>
+    <div style="white-space:pre-wrap;border:1px solid #ddd;border-radius:8px;padding:16px">${qhtml(q.stem)}</div>
+    <p><b>모범답안: ${esc(q.model_answer)}</b></p><p style="background:#fffbeb;padding:12px;border-radius:8px">💡 ${esc(q.explanation)}</p></body>`);
+};
+
+/* ---- 서술형 채점 ---- */
+window.dashGrade = async function(testId){
+  T.tab="grade";
+  const tests = await getTests();
+  testId = testId || T.testId || tests[0]?.id; T.testId = testId;
+  const D = await loadTestData(testId);
+  const { data: wqs } = await sb.from("grammar_written_questions").select("*").eq("test_id", testId).order("seq");
+  const byA = {}; D.wans.forEach(w=>{ (byA[w.attempt_id] ||= {})[w.wq_id]=w; });
+  const pending = D.first.filter(a=>a.wGraded<D.ws.length).length;
+  dashShell(`<div class="row" style="margin-bottom:8px">${testSelect(tests, testId, "dashGrade")}</div>
+    <div class="statbox"><span>응시 ${D.first.length}명</span><span>미채점 <b class="${pending?"no":""}">${pending}명</b></span><span class="small">점수를 입력하면 바로 저장됩니다 (0 ~ 배점).</span></div>
+    ${(wqs||[]).map(w=>`
+      <h3>${w.seq}번 [${w.points}점] <span class="small">${esc(UNIT_NAMES[w.unit_no]||"")}</span></h3>
+      <div class="qbox" style="font-size:.92rem">${qhtml(w.stem)}</div>
+      <div class="model">모범답안: <b>${esc(w.model_answer)}</b><br><span class="small">${esc(w.explanation)}</span></div>
+      <table><tr><th style="width:90px">학생</th><th>답안</th><th style="width:110px">점수</th></tr>
+      ${D.first.map(a=>{ const r=byA[a.id]?.[w.id]; return `<tr><td>${esc(a.students?.name)}</td>
+        <td><div class="ansbox">${r&&r.answer?esc(r.answer):"<span class='small'>(무응답)</span>"}</div></td>
+        <td><input class="grade-in" type="number" min="0" max="${w.points}" value="${r&&r.score!=null?r.score:""}" placeholder="-" onchange="gradeW(${r?r.id:0}, ${a.id}, ${w.id}, this, ${w.points})"> <span class="small">/${w.points}</span></td></tr>`; }).join("") || "<tr><td colspan=3>응시 없음</td></tr>"}</table>`).join("")}`);
+};
+window.gradeW = async function(rowId, attemptId, wqId, inp, max){
+  let v = inp.value===""?null:Number(inp.value);
+  if(v!==null && (isNaN(v)||v<0||v>max)){ alert(`0~${max} 사이로 입력하세요`); inp.value=""; return; }
+  inp.style.borderColor="#f59e0b";
+  let r;
+  if(rowId) r = await sb.from("grammar_written_answers").update({ score:v, graded_at: v===null?null:new Date().toISOString() }).eq("id", rowId);
+  else r = await sb.from("grammar_written_answers").insert({ attempt_id:attemptId, wq_id:wqId, answer:null, score:v, graded_at:new Date().toISOString() });
+  if(r.error){ inp.style.borderColor="#dc2626"; return alert("저장 실패: "+r.error.message); }
+  inp.style.borderColor="#16a34a";
+};
+
+/* ---- 학생별 ---- */
+window.dashStudents = async function(){
+  T.tab="students";
+  const tests = await getTests();
+  const ids = tests.map(t=>t.id);
+  const { data: students } = await sb.from("students").select("id, name").eq("active", true).order("name");
+  const { data: atts } = await sb.from("grammar_attempts").select("id, student_id, test_id, score, total, taken_at").in("test_id", ids).order("taken_at");
+  const firstKey = {}; const first = [];
+  (atts||[]).forEach(a=>{ const k=a.student_id+"_"+a.test_id; if(!(k in firstKey)){ firstKey[k]=a; first.push(a); } });
+  const attIds = first.map(a=>a.id);
+  let wans=[], items=[];
+  if(attIds.length){
+    wans = (await sb.from("grammar_written_answers").select("attempt_id, score").in("attempt_id", attIds)).data||[];
+    items = (await sb.from("grammar_attempt_items").select("attempt_id, unit_no, correct").in("attempt_id", attIds)).data||[];
+  }
+  const wsByTest = {}; for(const t of tests) wsByTest[t.id] = await getWritten(t.id);
+  const cell = (sid, t) => { const a=firstKey[sid+"_"+t.id]; if(!a) return `<td class="small">-</td>`;
+    const ws=wans.filter(w=>w.attempt_id===a.id); const graded=ws.filter(w=>w.score!=null).length; const wsc=ws.reduce((s,w)=>s+(w.score||0),0);
+    const tot=a.score*CONFIG.MC_POINTS+wsc; const full=graded===wsByTest[t.id].length;
+    return `<td><b>${tot}</b>${full?"":`<span class="small">*</span>`}<br><span class="small">${a.score}/${a.total}</span></td>`; };
+  const weak = sid => { const my=first.filter(a=>a.student_id===sid).map(a=>a.id); const u={}; items.filter(i=>my.includes(i.attempt_id)).forEach(i=>{ (u[i.unit_no] ||= {n:0,w:0}).n++; if(!i.correct) u[i.unit_no].w++; });
+    return Object.entries(u).filter(([k,v])=>v.n>=2 && v.w/v.n>=0.5).sort((a,b)=>(b[1].w/b[1].n)-(a[1].w/a[1].n)).slice(0,3).map(([k,v])=>`${UNIT_NAMES[k]||("U"+k)} ${Math.round(v.w/v.n*100)}%`).join(", ") || "-"; };
+  dashShell(`<h2>학생별 총점 <span class="small">(첫 제출 기준 · * = 서술형 채점 미완료)</span></h2>
+    <div style="overflow-x:auto"><table><tr><th>학생</th>${tests.map(t=>`<th>${esc(t.label.replace(CONFIG.TEST_LABEL_PREFIX,"").trim())}</th>`).join("")}<th>평균</th><th>약점 문법 (오답률)</th></tr>
+    ${(students||[]).filter(s=>!isExcluded(s.name)).map(s=>{ const my=first.filter(a=>a.student_id===s.id); const tots=my.map(a=>a.score*CONFIG.MC_POINTS+wans.filter(w=>w.attempt_id===a.id).reduce((x,w)=>x+(w.score||0),0));
+      const avg=tots.length?(tots.reduce((x,y)=>x+y,0)/tots.length).toFixed(1):"-";
+      return `<tr><td><b>${esc(s.name)}</b></td>${tests.map(t=>cell(s.id,t)).join("")}<td><b>${avg}</b></td><td class="small">${weak(s.id)}</td></tr>`; }).join("")}</table></div>`);
+};
+
+/* ---- 문법 포인트별 ---- */
+window.dashUnits = async function(){
+  T.tab="units";
+  const tests = await getTests(); const ids = tests.map(t=>t.id);
+  const { data: atts } = await sb.from("grammar_attempts").select("id, student_id, test_id, students(name)").in("test_id", ids).order("taken_at");
+  const seen = {}; const first = (atts||[]).filter(a=>!isExcluded(a.students?.name)).filter(a=>{ const k=a.student_id+"_"+a.test_id; if(seen[k]) return false; seen[k]=1; return true; });
+  const attIds = first.map(a=>a.id);
+  const items = attIds.length ? ((await sb.from("grammar_attempt_items").select("unit_no, correct").in("attempt_id", attIds)).data||[]) : [];
+  const wans = attIds.length ? ((await sb.from("grammar_written_answers").select("wq_id, score").in("attempt_id", attIds).not("score","is",null)).data||[]) : [];
+  const wq = (await sb.from("grammar_written_questions").select("id, unit_no, points").in("test_id", ids)).data||[];
+  const wqBy = {}; wq.forEach(w=>wqBy[w.id]=w);
+  const u = {}; items.forEach(i=>{ (u[i.unit_no] ||= {n:0,c:0,wn:0,ws:0,wmax:0}).n++; if(i.correct) u[i.unit_no].c++; });
+  wans.forEach(w=>{ const q=wqBy[w.wq_id]; if(!q) return; const b=(u[q.unit_no] ||= {n:0,c:0,wn:0,ws:0,wmax:0}); b.wn++; b.ws+=w.score; b.wmax+=q.points; });
+  const rows = Object.entries(u).map(([k,v])=>({k, name:UNIT_NAMES[k]||("U"+k), mc:v.n?v.c/v.n:null, n:v.n, w:v.wmax?v.ws/v.wmax:null, wn:v.wn})).sort((a,b)=>(a.mc??1)-(b.mc??1));
+  dashShell(`<h2>문법 포인트별 정답률 <span class="small">(전체 회차 · 첫 제출 기준)</span></h2>
+    <table><tr><th>문법 포인트</th><th style="width:38%">객관식 정답률</th><th>응답 수</th><th>서술형 득점률</th></tr>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.mc===null?"-":`<div class="bargraph ${r.mc<0.5?"bad":""}"><div style="width:${Math.round(r.mc*100)}%"></div></div><span class="small">${Math.round(r.mc*100)}%</span>`}</td><td class="small">${r.n}</td><td>${r.w===null?"-":Math.round(r.w*100)+"% ("+r.wn+"건)"}</td></tr>`).join("") || "<tr><td colspan=4>데이터 없음</td></tr>"}</table>`);
+};
+
+home();
+</script>
+</body>
+</html>

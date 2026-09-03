@@ -181,7 +181,7 @@ window.resumeDraft = async function(student){
 /* ================= 학생: 시험지 선택 ================= */
 window.testList = async function(student){
   app.innerHTML = `<div class="card"><h2>${esc(student.name)}</h2><div class="sub">시험지 불러오는 중...</div></div>`;
-  const tests = (await getTests(true)).filter(t=>t.active);
+  const tests = (await getTests(true)).filter(t=>t.active && !/^내신문법 통합대비/.test(t.label)); // 내신문법 통합대비는 naesin.html 에서 응시
   const { data: atts, error } = await sb.from("grammar_attempts").select("test_id, score, total, taken_at").eq("student_id", student.id).order("taken_at");
   if(error) err(error);
   const done = {};
