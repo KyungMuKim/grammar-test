@@ -117,6 +117,13 @@ async function getQuestions(ids){
 const testRange = t => t.unit_from===t.unit_to ? `Unit ${String(t.unit_from).padStart(2,"0")}` : `Unit ${String(t.unit_from).padStart(2,"0")}~${String(t.unit_to).padStart(2,"0")}`;
 
 /* ================= 학생: 홈 ================= */
+// 내신문법 통합대비 배너 표시 여부 (true로 바꾸면 홈에 다시 노출됨)
+const SHOW_NAESIN_BANNER = false;
+const NAESIN_BANNER_HTML = `
+     <a href="naesin.html" style="display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none;color:#1c2333;background:#fff7ed;border:2px solid #fdba74;border-radius:12px;padding:12px 14px;margin:6px 0 12px">
+       <span><b>📘 내신문법 통합대비 (중1 스탠포드반)</b><br><span class="small">2학기 중간고사 대비 실전 TEST 1~5회 · 객관식 14 + 서술형 6</span></span>
+       <span style="background:#0f4c81;color:#fff;border-radius:8px;padding:8px 12px;font-weight:700;white-space:nowrap">응시하기 →</span>
+     </a>`;
 async function home(){
   app.innerHTML = `<div class="card"><h1>문법과제 ✏️</h1><div class="sub">불러오는 중...</div></div>`;
   const { data: students, error } = await sb.from("students").select("*").eq("active", true).order("name");
@@ -125,10 +132,7 @@ async function home(){
    <div class="card">
      <h1>문법과제 ✏️</h1>
      <div class="sub">Grammar Zone 진도별 문법 평가 — 이름을 선택하세요</div>
-     <a href="naesin.html" style="display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none;color:#1c2333;background:#fff7ed;border:2px solid #fdba74;border-radius:12px;padding:12px 14px;margin:6px 0 12px">
-       <span><b>📘 내신문법 통합대비 (중1 스탠포드반)</b><br><span class="small">2학기 중간고사 대비 실전 TEST 1~5회 · 객관식 14 + 서술형 6</span></span>
-       <span style="background:#0f4c81;color:#fff;border-radius:8px;padding:8px 12px;font-weight:700;white-space:nowrap">응시하기 →</span>
-     </a>
+     ${SHOW_NAESIN_BANNER ? NAESIN_BANNER_HTML : ""}
      ${students.map(s=>`<button class="student-btn" onclick='pickStudent(${JSON.stringify(s)})'>${esc(s.name)}</button>`).join("") || '<div class="pill">등록된 학생이 없어요.</div>'}
      <div class="row"><button class="btn-ghost btn-sm" onclick="teacherLogin()">🔑 선생님</button></div>
    </div>`;
