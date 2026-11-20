@@ -72,7 +72,7 @@ const CONFIG = {
   TEST_LABEL_PREFIX: "내신문법 통합대비",   // grammar_tests.label 이 이 문자열로 시작하는 시험지만 표시
   MC_POINTS: 4,                              // 객관식 문항당 배점 (14문항 × 4 = 56)
   EXCLUDE_NAMES: ["실험용","실험","테스트","test","딘"],
-  SHOW_RESULT_TO_STUDENT: false              // true 로 바꾸면 제출 직후 객관식 점수를 학생에게 보여줌
+  SHOW_RESULT_TO_STUDENT: true               // false 로 바꾸면 학생 화면에서 점수(제출 직후·내 성적 보기)를 모두 숨김
 };
 const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 const app = document.getElementById("app");
@@ -162,9 +162,20 @@ window.pinGo = async function(student){
 window.testList = async function(student){
   app.innerHTML = `<div class="card"><h2>${esc(student.name)}</h2><div class="sub">시험지 불러오는 중...</div></div>`;
   const tests = (await getTests(true)).filter(t=>t.active);
-  const { data: atts, error } = await sb.from("grammar_attempts").select("test_id, score, total, taken_at").eq("student_id", student.id).in("test_id", tests.map(t=>t.id)).order("taken_at");
+  const { data: atts, error } = await sb.from("grammar_attempts").select("id, test_id, score, total, taken_at").eq("student_id", student.id).in("test_id", tests.map(t=>t.id)).order("taken_at");
   if(error) err(error);
   const done = {}; (atts||[]).forEach(a=>{ if(!(a.test_id in done)) done[a.test_id]=a; });
+  const sum = {};   // test_id -> 오른쪽에 보여줄 점수 요약 (첫 제출 기준)
+  const firstIds = Object.values(done).map(a=>a.id);
+  if(CONFIG.SHOW_RESULT_TO_STUDENT && firstIds.length){
+    const r1 = await sb.from("grammar_written_questions").select("id, test_id").in("test_id", Object.keys(done).map(Number)); if(r1.error) err(r1.error);
+    const r2 = await sb.from("grammar_written_answers").select("attempt_id, score").in("attempt_id", firstIds); if(r2.error) err(r2.error);
+    Object.values(done).forEach(a=>{
+      const nW = (r1.data||[]).filter(w=>w.test_id===a.test_id).length;
+      const mine = (r2.data||[]).filter(w=>w.attempt_id===a.id && w.score!=null);
+      sum[a.test_id] = mine.length>=nW ? `총 ${a.score*CONFIG.MC_POINTS + mine.reduce((x,w)=>x+w.score,0)}점` : `객관식 ${a.score}/${a.total} · 서술형 채점 중`;
+    });
+  }
   app.innerHTML = `
    <div class="card">
      <h2>${esc(student.name)}</h2>
@@ -173,7 +184,8 @@ window.testList = async function(student){
         const d = done[t.id]; const dr = loadDraft(student.id, t.id);
         return `<button class="exam-btn" onclick='testConfirm(${JSON.stringify(student)}, ${t.id})'>
           <span>${esc(t.label)}<br><span class="small">객관식 ${t.question_ids.length} + 서술형 6 · 100점 만점${dr&&!d?" · 💾 임시저장 있음":""}</span></span>
-          <span class="${d?"done":"small"}">${d?"✅ 제출 완료":"미응시"}</span></button>`;
+          <span class="${d?"done":"small"}" style="text-align:right">${d?"✅ 제출 완료"+(sum[t.id]?`<br><span class="small">${sum[t.id]}</span>`:""):"미응시"}</span></button>
+          ${d&&CONFIG.SHOW_RESULT_TO_STUDENT?`<div style="text-align:right; margin:-2px 0 10px"><button class="btn-ghost btn-sm" onclick='myResult(${JSON.stringify(student)}, ${t.id})'>📊 내 성적 보기</button></div>`:""}`;
       }).join("") || '<div class="pill">아직 열린 시험지가 없어요.</div>'}
      <div class="row"><button class="btn-ghost btn-sm" onclick="home()">← 이름 다시 선택</button></div>
    </div>`;
@@ -188,7 +200,7 @@ window.testConfirm = async function(student, testId){
    <div class="card">
      <h2>${esc(test.label)}</h2>
      <div class="pill"><b>객관식 ${test.question_ids.length}문항(각 ${CONFIG.MC_POINTS}점) + 서술형 ${ws.length}문항(${ws.map(w=>w.points).join("·")}점) = ${maxTotal(test,ws)}점</b> · 권장 시간 35분<br>
-     <span class="small">아무것도 보지 말고 혼자 힘으로 푸세요. 서술형은 답 문장을 직접 입력합니다. 제출하면 답을 바꿀 수 없고, 채점 결과는 수업 시간에 함께 확인합니다.</span></div>
+     <span class="small">아무것도 보지 말고 혼자 힘으로 푸세요. 서술형은 답 문장을 직접 입력합니다. 제출하면 답을 바꿀 수 없어요. ${CONFIG.SHOW_RESULT_TO_STUDENT?"객관식 점수는 제출 직후에, 서술형 점수는 선생님 채점 후에 <b>내 성적 보기</b>에서 확인할 수 있어요. 정답과 해설은 수업 시간에 함께 확인해요.":"채점 결과는 수업 시간에 함께 확인해요."}</span></div>
      ${count?`<div class="flag amber">이미 ${count}회 제출했어요. 다시 풀면 기록은 남지만 통계에는 <b>첫 제출</b>이 반영돼요.</div>`:""}
      <div class="row"><button class="btn-primary" onclick='startTest(${JSON.stringify(student)}, ${testId}, false)'>시험 시작</button></div>
      ${dr?`<div class="row"><button class="btn-ghost" onclick='startTest(${JSON.stringify(student)}, ${testId}, true)'>💾 진행하던 시험 이어서 하기</button></div>`:""}
@@ -275,12 +287,56 @@ function doneScreen(att){
      <div class="done-big">✅</div>
      <h2 style="text-align:center">제출 완료!</h2>
      <div class="sub" style="text-align:center">${esc(S.student.name)} · ${esc(S.test.label)} · ${Math.floor(att.duration_sec/60)}분 ${att.duration_sec%60}초</div>
-     ${CONFIG.SHOW_RESULT_TO_STUDENT?`<div class="pill" style="text-align:center">객관식 <b>${att.score}/${att.total}</b> · 서술형은 선생님 채점 후 확인</div>`:""}
-     <div class="pill" style="text-align:center">수고했어요. 서술형 채점 후 결과와 해설을 <b>수업 시간에 함께</b> 확인합니다.</div>
-     <div class="row"><button class="btn-ghost" onclick="home()">처음으로</button></div>
+     ${CONFIG.SHOW_RESULT_TO_STUDENT?`<div class="pill" style="text-align:center">객관식 <b>${att.score}/${att.total}</b> (${att.score*CONFIG.MC_POINTS}점) · 서술형은 선생님 채점 후에 점수가 나와요</div>
+     <div class="pill" style="text-align:center">수고했어요. 점수는 회차 목록의 <b>📊 내 성적 보기</b>에서 언제든 다시 볼 수 있어요. 정답과 해설은 <b>수업 시간에 함께</b> 확인해요.</div>
+     <div class="row"><button class="btn-primary" onclick='myResult(${JSON.stringify(S.student)}, ${S.test.id})'>📊 내 성적 보기</button></div>`
+     :`<div class="pill" style="text-align:center">수고했어요. 서술형 채점 후 결과와 해설을 <b>수업 시간에 함께</b> 확인해요.</div>`}
+     <div class="row"><button class="btn-ghost" onclick='testList(${JSON.stringify(S.student)})'>← 회차 목록</button><button class="btn-ghost" onclick="home()">처음으로</button></div>
    </div>`;
   window.scrollTo(0,0);
 }
+
+/* ================= 학생: 내 성적 보기 (점수 + 틀린 문항 번호 · 정답/해설은 노출하지 않음) ================= */
+window.myResult = async function(student, testId){
+  if(!CONFIG.SHOW_RESULT_TO_STUDENT) return testList(student);
+  app.innerHTML = `<div class="card"><h2>성적 불러오는 중...</h2></div>`;
+  const test = (await getTests()).find(t=>t.id===testId);
+  const ws = await getWritten(testId);
+  const { data: atts, error } = await sb.from("grammar_attempts").select("id, score, total, taken_at").eq("student_id", student.id).eq("test_id", testId).order("taken_at");
+  if(error) err(error);
+  if(!atts || !atts.length){ alert("아직 제출한 기록이 없어요."); return testList(student); }
+  const a = atts[0];
+  const { data: wans, error: e2 } = await sb.from("grammar_written_answers").select("wq_id, score").eq("attempt_id", a.id);
+  if(e2) err(e2);
+  const sc = {}; (wans||[]).forEach(w=>{ if(w.score!=null) sc[w.wq_id]=w.score; });
+  const { data: its, error: e3 } = await sb.from("grammar_attempt_items").select("question_id, seq, answer, correct").eq("attempt_id", a.id).order("seq");
+  if(e3) err(e3);
+  const qno = it => { const k = test.question_ids.indexOf(it.question_id); return (k>=0 ? k : it.seq) + 1; };   // 시험지에서 본 문항 번호
+  const wrong = (its||[]).filter(it=>!it.correct).map(it=>({ n:qno(it), blank:it.answer==null })).sort((x,y)=>x.n-y.n);
+  const wrongW = ws.map((w,j)=>({ n:a.total+j+1, w })).filter(x=>(x.w.id in sc) && sc[x.w.id] < x.w.points);
+  const graded = ws.filter(w=>w.id in sc).length, allGraded = graded>=ws.length;
+  const mcPts = a.score*CONFIG.MC_POINTS, mcMax = a.total*CONFIG.MC_POINTS;
+  const wPts = ws.reduce((s,w)=>s+(sc[w.id]||0),0), wMax = ws.reduce((s,w)=>s+w.points,0);
+  app.innerHTML = `
+   <div class="card">
+     <h2>📊 ${esc(test.label)}</h2>
+     <div class="sub">${esc(student.name)} · ${fmtDate(a.taken_at)} 제출${atts.length>1?` · 여러 번 제출해서 <b>첫 제출</b> 점수를 보여드려요`:""}</div>
+     <div class="done-big" style="font-size:2.2rem">${allGraded?`${mcPts+wPts}<span style="font-size:1.1rem; color:var(--sub)"> / ${mcMax+wMax}점</span>`:`객관식 ${a.score}<span style="font-size:1.1rem; color:var(--sub)"> / ${a.total}</span>`}</div>
+     <table>
+       <tr><th>구분</th><th style="width:130px">점수</th></tr>
+       <tr><td>객관식 (${a.total}문항 중 ${a.score}개 정답)</td><td><b>${mcPts}</b> / ${mcMax}점</td></tr>
+       ${ws.map((w,j)=>`<tr><td>서술형 ${a.total+j+1}번</td><td>${w.id in sc?`<b>${sc[w.id]}</b> / ${w.points}점`:`<span class="small">채점 중</span>`}</td></tr>`).join("")}
+       <tr><td><b>합계</b></td><td>${allGraded?`<b>${mcPts+wPts}</b> / ${mcMax+wMax}점`:`<span class="small">채점 후 표시</span>`}</td></tr>
+     </table>
+     <h3>틀린 문항</h3>
+     <div class="pill"><b>객관식</b> · ${wrong.length ? wrong.map(x=>`<b style="color:var(--no)">${x.n}번</b>${x.blank?`<span class="small">(무응답)</span>`:""}`).join(", ") : "모두 맞았어요 🎉"}
+     <br><b>서술형</b> · ${wrongW.length ? wrongW.map(x=>`<b style="color:var(--no)">${x.n}번</b><span class="small">(${sc[x.w.id]}/${x.w.points}점)</span>`).join(", ") : (graded ? (allGraded ? "모두 만점이에요 🎉" : "채점된 문항은 모두 만점이에요") : `<span class="small">채점 중</span>`)}${graded&&!allGraded?` <span class="small">· 나머지는 채점 중</span>`:""}</div>
+     ${allGraded?"":`<div class="flag amber">서술형은 선생님이 직접 채점하고 있어요. 채점이 끝나면 여기에 서술형 점수와 합계가 나와요.</div>`}
+     <div class="pill">정답과 해설은 <b>수업 시간에 함께</b> 확인해요.</div>
+     <div class="row"><button class="btn-ghost" onclick='testList(${JSON.stringify(student)})'>← 회차 목록</button></div>
+   </div>`;
+  window.scrollTo(0,0);
+};
 
 /* ================= 선생님 ================= */
 function askPin(label){
