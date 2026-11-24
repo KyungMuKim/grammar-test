@@ -124,6 +124,13 @@ const NAESIN_BANNER_HTML = `
        <span><b>📘 내신문법 통합대비 (중1 스탠포드반)</b><br><span class="small">2학기 기말고사 대비 실전 TEST 11~13회 · 객관식 14 + 서술형 6</span></span>
        <span style="background:#0f4c81;color:#fff;border-radius:8px;padding:8px 12px;font-weight:700;white-space:nowrap">응시하기 →</span>
      </a>`;
+// 본문 백지인출 배너 표시 여부
+const SHOW_RECALL_BANNER = true;
+const RECALL_BANNER_HTML = `
+     <a href="recall.html" style="display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none;color:#1c2333;background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:12px 14px;margin:6px 0 12px">
+       <span><b>✍️ 본문 백지인출 (중1 스탠포드반)</b><br><span class="small">2학기 기말고사 교과서 본문 암기 · 1단계 한→영 / 2단계 백지인출</span></span>
+       <span style="background:#0f4c81;color:#fff;border-radius:8px;padding:8px 12px;font-weight:700;white-space:nowrap">응시하기 →</span>
+     </a>`;
 async function home(){
   app.innerHTML = `<div class="card"><h1>문법과제 ✏️</h1><div class="sub">불러오는 중...</div></div>`;
   const { data: students, error } = await sb.from("students").select("*").eq("active", true).order("name");
@@ -133,6 +140,7 @@ async function home(){
      <h1>문법과제 ✏️</h1>
      <div class="sub">Grammar Zone 진도별 문법 평가 — 이름을 선택하세요</div>
      ${SHOW_NAESIN_BANNER ? NAESIN_BANNER_HTML : ""}
+     ${SHOW_RECALL_BANNER ? RECALL_BANNER_HTML : ""}
      ${students.map(s=>`<button class="student-btn" onclick='pickStudent(${JSON.stringify(s)})'>${esc(s.name)}</button>`).join("") || '<div class="pill">등록된 학생이 없어요.</div>'}
      <div class="row"><button class="btn-ghost btn-sm" onclick="teacherLogin()">🔑 선생님</button></div>
    </div>`;

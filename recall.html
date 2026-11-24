@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>본문 백지인출</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --bg:#f4f6fb; --card:#fff; --ink:#1c2333; --sub:#68718a; --pri:#0f4c81; --ok:#16a34a; --no:#dc2626; --line:#e5e9f2; --warn:#b45309; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:var(--bg); color:var(--ink); padding:16px; max-width:860px; margin:0 auto;}
+  .card{background:var(--card); border-radius:16px; padding:22px; box-shadow:0 2px 10px rgba(20,30,60,.06); margin-bottom:14px;}
+  h1{font-size:1.5rem; margin-bottom:6px;} h2{font-size:1.2rem; margin-bottom:8px;} h3{font-size:1.02rem; margin:16px 0 6px;}
+  .sub{color:var(--sub); font-size:.9rem; margin-bottom:14px; line-height:1.55;}
+  .small{color:var(--sub); font-size:.8rem;}
+  .pill{background:#eaf1f8; border-radius:10px; padding:12px 14px; font-size:.93rem; margin:10px 0; line-height:1.65;}
+  .pill.amber{background:#fffbeb; color:#92400e;}
+  .btn-primary{background:var(--pri); color:#fff; border:none; border-radius:10px; padding:13px 22px; font-size:1.05rem; font-weight:700; cursor:pointer; width:100%;}
+  .btn-primary:disabled{opacity:.45; cursor:default;}
+  .btn-ghost{background:#eef1f8; color:var(--ink); border:none; border-radius:10px; padding:10px 16px; font-size:.95rem; cursor:pointer;}
+  .btn-sm{padding:6px 10px; font-size:.82rem; border-radius:8px;}
+  .row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .row .btn-primary{flex:1; width:auto;}
+  .student-btn{display:inline-block; background:#eaf1f8; border:2px solid transparent; border-radius:12px; padding:14px 18px; margin:5px 4px; font-size:1.05rem; font-weight:700; cursor:pointer;}
+  .bar{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;}
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .tab{background:#eef1f8; border:none; border-radius:999px; padding:8px 14px; font-size:.9rem; cursor:pointer;}
+  .tab.on{background:var(--pri); color:#fff; font-weight:700;}
+  .pcard{border:2px solid var(--line); border-radius:14px; padding:14px 16px; margin:10px 0;}
+  .pcard .lab{font-size:.8rem; color:var(--sub);}
+  .pcard .ttl{font-size:1.08rem; font-weight:800; margin:2px 0 8px;}
+  .stage-btn{flex:1; min-width:150px; display:flex; flex-direction:column; align-items:flex-start; gap:2px; background:#fff; border:2px solid var(--pri); color:var(--pri); border-radius:12px; padding:10px 12px; font-size:.95rem; font-weight:700; cursor:pointer; text-align:left;}
+  .stage-btn .best{font-size:.78rem; font-weight:400; color:var(--sub);}
+  .stage-btn .best b{color:var(--ok);}
+  .sec{font-weight:800; color:var(--pri); margin:18px 0 6px; padding-top:10px; border-top:2px dashed var(--line);}
+  .ln{padding:10px 0; border-bottom:1px solid var(--line);}
+  .ln .ko{font-size:.98rem; line-height:1.6;}
+  .ln .no{display:inline-block; min-width:26px; color:var(--sub); font-size:.8rem; font-weight:700;}
+  .ln .spk{display:inline-block; background:#eaf1f8; color:var(--pri); font-weight:700; font-size:.82rem; border-radius:6px; padding:2px 7px; margin:6px 0 0;}
+  textarea{width:100%; font-size:1rem; padding:9px 10px; border:2px solid #cbd5e1; border-radius:10px; font-family:inherit; margin:6px 0 0; line-height:1.5; resize:none; overflow:hidden;}
+  textarea:focus{outline:none; border-color:var(--pri);}
+  textarea.big{min-height:46vh; resize:vertical; overflow:auto; line-height:1.8;}
+  .sticky{position:sticky; bottom:0; background:linear-gradient(transparent, var(--card) 30%); padding-top:18px;}
+  .score-big{font-size:2.8rem; font-weight:900; text-align:center; margin:10px 0 2px; color:var(--pri);}
+  .statbox{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; background:#eaf1f8; border-radius:10px; padding:10px 14px; margin:10px 0; font-size:.92rem;}
+  .legend{font-size:.82rem; color:var(--sub); line-height:1.8; margin:8px 0;}
+  .res{padding:10px 0; border-bottom:1px solid var(--line); font-size:.97rem; line-height:1.75;}
+  .res .mark{font-weight:900; margin-right:4px;} .res .mark.o{color:var(--ok);} .res .mark.x{color:var(--no);}
+  .res .k{color:var(--sub); font-size:.88rem;}
+  .res .tag{display:inline-block; min-width:44px; font-size:.75rem; color:var(--sub); font-weight:700;}
+  .eq{}
+  .del{color:var(--no); font-weight:700; text-decoration:underline; text-underline-offset:3px;}
+  .ins{color:var(--no); text-decoration:line-through;}
+  .near{color:var(--warn); font-weight:700; background:#fef3c7; border-radius:3px;}
+  .optm{color:#9aa3b5;}
+  .passage{background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:8px 0; line-height:2; font-size:.98rem;}
+  .passage p{margin:0 0 4px;}
+  table{width:100%; border-collapse:collapse; font-size:.86rem; margin:8px 0;}
+  th,td{border-bottom:1px solid var(--line); padding:7px 6px; text-align:left; vertical-align:top;}
+  th{background:#f8fafc; font-size:.78rem; color:var(--sub);}
+  td.c, th.c{text-align:center;}
+  .cell{cursor:pointer; color:var(--pri); font-weight:700; text-decoration:underline; text-underline-offset:3px;}
+  .bargraph{height:10px; background:var(--line); border-radius:5px; overflow:hidden; min-width:80px;}
+  .bargraph div{height:100%; background:var(--ok);}
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:9;}
+  .modal{background:#fff; border-radius:14px; padding:20px; width:min(92vw,360px);}
+  .scrollx{overflow-x:auto;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ================= 설정 (문법과제·내신문법 통합대비와 동일 Supabase) ================= */
+const CONFIG = {
+  SUPABASE_URL: "https://xtxuozcbeqruuigeijsz.supabase.co",
+  SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0eHVvemNiZXFydXVpZ2VpanN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxNjI4MzMsImV4cCI6MjA5ODczODgzM30.kuHunWODG6_lv3JajIMmr6Xw7yEORy-Dixs-EB4sYaM",
+  EXAM_NAME: "2학기 기말고사",
+  SCHOOLS: ["신서중","목일중","신남중","목동중","광명중"],
+  EXCLUDE_NAMES: ["실험용","실험","테스트","test","딘"]
+};
+const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+const app = document.getElementById("app");
+let S = {};          // 학생 세션: student, passages, attempts, school, p, stage, startedAt
+let T = {};          // 선생님 세션
+const STAGE_NAME = {1:"1단계 · 한→영", 2:"2단계 · 백지인출"};
+
+/* ================= 공통 ================= */
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = d => { const x=new Date(d); return `${x.getMonth()+1}/${x.getDate()} ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`; };
+const isExcluded = n => CONFIG.EXCLUDE_NAMES.some(x=>String(n||"").includes(x));
+const fmtScore = v => (Math.round(Number(v)*10)/10).toString();
+function err(e){ alert("오류: " + (e.message||e)); throw e; }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+const draftKey = (sid,pid,stage) => `recall_draft_${sid}_${pid}_${stage}`;
+
+/* ================= 채점 (엄격: 대소문자·문장부호까지 일치해야 정답) =================
+   같은 것으로 보는 것은 '입력 방식 차이'뿐: 둥근/곧은 따옴표, 말줄임표(… / ...), 띄어쓰기 개수·줄바꿈, 악센트 글자(é=e) */
+function norm(s){
+  return String(s??"")
+    .normalize("NFD").replace(/[̀-ͯ]/g,"").normalize("NFC")
+    .replace(/[‘’‛`´′]/g,"'")
+    .replace(/[“”‟″]/g,'"')
+    .replace(/…/g,"...")
+    .replace(/[‐-―−]/g,"-")
+    .replace(/[ 　]/g," ")
+    .replace(/\s*\.\.\.\s*/g,"... ")
+    .replace(/\.\.\. (?=["')!?.,;:]|$)/g,"...")
+    .replace(/\s+/g," ").trim();
+}
+const toks = s => { const n = norm(s); return n ? n.split(" ") : []; };
+const loose = t => t.toLowerCase().replace(/[^a-z0-9가-힣]/g,"");
+const refLines = p => p.lines.filter(l=>!l.h);
+
+/* LCS 정렬: a(정답 토큰) vs b(학생 토큰) → ops [{t:'eq'|'del'|'ins', a?, b?, i?, j?}] */
+function align(a, b, eqf){
+  const n=a.length, m=b.length, W=m+1;
+  const dp = new Uint16Array((n+1)*W);
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--)
+    dp[i*W+j] = eqf(a[i],b[j]) ? dp[(i+1)*W+j+1]+1 : Math.max(dp[(i+1)*W+j], dp[i*W+j+1]);
+  const ops=[]; let i=0,j=0;
+  while(i<n && j<m){
+    if(eqf(a[i],b[j])){ ops.push({t:"eq",i,j}); i++; j++; }
+    else if(dp[(i+1)*W+j] >= dp[i*W+j+1]){ ops.push({t:"del",i}); i++; }
+    else { ops.push({t:"ins",j}); j++; }
+  }
+  while(i<n){ ops.push({t:"del",i}); i++; }
+  while(j<m){ ops.push({t:"ins",j}); j++; }
+  return ops;
+}
+/* 틀린 구간 안에서 '대소문자·문장부호만 다른' 낱말 짝을 near 로 표시 */
+function markNear(ops, A, B){
+  let k=0;
+  while(k<ops.length){
+    if(ops[k].t==="eq"){ k++; continue; }
+    let e=k; while(e<ops.length && ops[e].t!=="eq") e++;
+    const dels=ops.slice(k,e).filter(o=>o.t==="del"), inss=ops.slice(k,e).filter(o=>o.t==="ins");
+    let jj=0;
+    for(const d of dels){
+      const la = loose(A[d.i]); if(!la) continue;
+      for(let x=jj;x<inss.length;x++){
+        if(!inss[x].near && loose(B[inss[x].j])===la){ d.near=inss[x].j; inss[x].near=d.i; jj=x+1; break; }
+      }
+    }
+    k=e;
+  }
+  return ops;
+}
+/* 1단계: 문장별 채점 */
+function grade1(p, answers){
+  const L = refLines(p);
+  let exact=0, lz=0;
+  const rows = L.map((l,idx)=>{
+    const A=toks(l.en), B=toks(answers[idx]||"");
+    const ok = A.join(" ")===B.join(" ");
+    const lok = A.map(loose).filter(Boolean).join(" ")===B.map(loose).filter(Boolean).join(" ");
+    if(ok) exact++; if(lok) lz++;
+    return { l, A, B, ok, lok, ops: ok?null:markNear(align(A,B,(x,y)=>x===y),A,B) };
+  });
+  const total=L.length;
+  return { rows, correct:exact, total, score: total?Math.round(exact/total*1000)/10:0, loose_score: total?Math.round(lz/total*1000)/10:0 };
+}
+/* 2단계: 본문 전체를 낱말 단위로 대조. 소제목·화자 이름은 써도 되고 안 써도 됨(opt) */
+function refTokens2(p){
+  const R=[];
+  p.lines.forEach((l,li)=>{
+    if(l.h){ toks(l.en).forEach(t=>R.push({t,li,opt:true})); return; }
+    if(l.sp) toks(l.sp+":").forEach(t=>R.push({t,li,opt:true}));
+    toks(l.en).forEach(t=>R.push({t,li,opt:false}));
+  });
+  return R;
+}
+function grade2(p, text){
+  const R=refTokens2(p), A=R.map(r=>r.t), B=toks(text);
+  const ops = markNear(align(A,B,(x,y)=>x===y),A,B);
+  const req = R.filter(r=>!r.opt).length;
+  let hit=0, near=0;
+  ops.forEach(o=>{ if(o.t==="eq" && !R[o.i].opt) hit++; if(o.t==="del" && o.near!==undefined && !R[o.i].opt) near++; });
+  return { R, B, ops, correct:hit, total:req, score: req?Math.round(hit/req*1000)/10:0, loose_score: req?Math.round((hit+near)/req*1000)/10:0 };
+}
+
+/* ================= 홈 ================= */
+async function home(){
+  S = {}; T = {};
+  app.innerHTML = `<div class="card"><h1>본문 백지인출 ✍️</h1><div class="sub">불러오는 중...</div></div>`;
+  const { data: students, error } = await sb.from("students").select("*").eq("active", true).order("name");
+  if(error) err(error);
+  window._students = students;
+  app.innerHTML = `
+   <div class="card">
+     <h1>본문 백지인출 ✍️</h1>
+     <div class="sub">${CONFIG.EXAM_NAME} 교과서 본문 암기 테스트예요. 이름을 선택하세요.</div>
+     ${students.map((s,i)=>`<button class="student-btn" onclick="pickStudent(${i})">${esc(s.name)}</button>`).join("") || '<div class="pill">등록된 학생이 없어요.</div>'}
+     <div class="row"><a class="btn-ghost btn-sm" href="index.html" style="text-decoration:none">← 문법과제 홈</a><button class="btn-ghost btn-sm" onclick="teacherLogin()">🔑 선생님</button></div>
+   </div>`;
+}
+window.pickStudent = function(i){
+  const student = window._students[i];
+  app.innerHTML = `
+   <div class="card">
+     <h2>본인 확인</h2>
+     <div class="sub">아래 이름이 <b>본인</b>이 맞는지 확인하고, <b>비밀번호 4자리</b>를 입력하세요. (단어시험과 같은 비밀번호예요)</div>
+     <div style="font-size:2.2rem; font-weight:900; text-align:center; margin:14px 0">${esc(student.name)}</div>
+     <div class="row" style="justify-content:center">
+       <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"
+         placeholder="비밀번호 4자리" style="text-align:center; font-size:1.3rem; letter-spacing:.35em; width:190px; padding:10px; border:2px solid #cbd5e1; border-radius:10px">
+     </div>
+     <div class="row"><button class="btn-primary" id="pinBtn">네, ${esc(student.name)} 입니다 →</button></div>
+     <div class="row"><button class="btn-ghost btn-sm" onclick="home()">← 아니에요, 이름 다시 선택</button></div>
+   </div>`;
+  const inp = document.getElementById("pinInput");
+  inp.focus();
+  const go = () => pinGo(student);
+  document.getElementById("pinBtn").onclick = go;
+  inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
+};
+async function pinGo(student){
+  const inp = document.getElementById("pinInput");
+  const pin = (inp && inp.value || "").trim();
+  if(!/^\d{4}$/.test(pin)){ alert("비밀번호 4자리(숫자)를 입력하세요"); if(inp) inp.focus(); return; }
+  const btns = document.querySelectorAll("button"); btns.forEach(b=>b.disabled=true);
+  const { data, error } = await sb.rpc("recall_passages_for_student", { p_student_id: student.id, p_pin: pin });
+  if(error){
+    btns.forEach(b=>b.disabled=false);
+    if(/invalid pin/i.test(error.message||"")){ if(inp){ inp.value=""; inp.focus(); } return alert("비밀번호가 달라요. 본인 이름이 맞는지, 비밀번호를 다시 확인하세요."); }
+    return alert("오류: "+error.message);
+  }
+  S = { student, passages: data||[], school: lsGet("recall_school_"+student.id) };
+  list();
+}
+
+/* ================= 학생: 지문 목록 ================= */
+async function loadMyAttempts(){
+  const { data, error } = await sb.from("recall_attempts").select("*").eq("student_id", S.student.id).order("taken_at");
+  if(error) err(error);
+  S.attempts = data||[];
+}
+window.setSchool = function(s){ S.school = s; lsSet("recall_school_"+S.student.id, s); list(true); };
+window.list = async function(keep){
+  if(!keep || !S.attempts){ app.innerHTML = `<div class="card"><h2>${esc(S.student.name)}</h2><div class="sub">불러오는 중...</div></div>`; await loadMyAttempts(); }
+  const schools = CONFIG.SCHOOLS.filter(s=>S.passages.some(p=>(p.schools||[]).includes(s)));
+  const tabs = `<div class="tabs">${schools.map(s=>`<button class="tab ${S.school===s?"on":""}" onclick="setSchool('${s}')">${s}</button>`).join("")}</div>`;
+  let body;
+  if(!S.school || !schools.includes(S.school)){
+    body = `<div class="pill">먼저 <b>본인 학교</b>를 선택하세요. 한 번 고르면 다음부터는 기억해 둘게요.</div>`;
+  } else {
+    const ps = S.passages.filter(p=>(p.schools||[]).includes(S.school));
+    body = ps.map(p=>{
+      const best = st => { const a=S.attempts.filter(x=>x.passage_id===p.id && x.stage===st); return a.length ? `최고 <b>${fmtScore(Math.max(...a.map(x=>Number(x.score))))}점</b> · ${a.length}회 응시` : "아직 응시 전이에요"; };
+      const hist = S.attempts.filter(x=>x.passage_id===p.id);
+      return `<div class="pcard">
+        <div class="lab">${esc(p.label)} · ${refLines(p).length}문장</div>
+        <div class="ttl">${esc(p.title)}</div>
+        <div class="row" style="margin-top:0">
+          <button class="stage-btn" onclick="intro(${p.id},1)">1단계 · 한→영<span class="best">${best(1)}</span></button>
+          <button class="stage-btn" onclick="intro(${p.id},2)">2단계 · 백지인출<span class="best">${best(2)}</span></button>
+        </div>
+        ${hist.length?`<div class="row"><button class="btn-ghost btn-sm" onclick="myHistory(${p.id})">📋 내 채점 결과 다시 보기 (${hist.length})</button></div>`:""}
+      </div>`;
+    }).join("") || `<div class="pill">이 학교에 등록된 지문이 아직 없어요.</div>`;
+  }
+  app.innerHTML = `<div class="card">
+    <div class="bar"><h2>${esc(S.student.name)} · 본문 백지인출</h2><button class="btn-ghost btn-sm" onclick="home()">나가기</button></div>
+    <div class="sub"><b>1단계</b>는 우리말 해석을 보고 문장마다 영어로 쓰고, <b>2단계</b>는 아무것도 보지 않고 본문 전체를 써요. 1단계가 익숙해지면 2단계에 도전하세요. 몇 번이든 다시 볼 수 있어요.</div>
+    ${tabs}${body}</div>`;
+};
+const P = id => (S.passages||T.passages||[]).find(p=>p.id===id);
+
+window.myHistory = function(pid){
+  const p=P(pid), hist=S.attempts.filter(x=>x.passage_id===pid).slice().reverse();
+  app.innerHTML = `<div class="card">
+    <div class="bar"><h2>${esc(p.title)}</h2><button class="btn-ghost btn-sm" onclick="list(true)">← 목록</button></div>
+    <div class="sub">${esc(p.label)} · 지금까지 제출한 기록이에요. 누르면 채점 결과를 다시 볼 수 있어요.</div>
+    <table><tr><th>제출</th><th>단계</th><th class="c">점수</th><th class="c">맞은 개수</th><th></th></tr>
+    ${hist.map(a=>`<tr><td>${fmtDate(a.taken_at)}</td><td>${STAGE_NAME[a.stage]}</td><td class="c"><b>${fmtScore(a.score)}</b></td><td class="c">${a.correct}/${a.total}</td><td><span class="cell" onclick="showAttempt(${a.id})">결과 보기</span></td></tr>`).join("")}
+    </table></div>`;
+};
+window.showAttempt = function(id){
+  const a = S.attempts.find(x=>x.id===id); if(!a) return;
+  result(P(a.passage_id), a, `<button class="btn-ghost" onclick="myHistory(${a.passage_id})">← 기록 목록</button>`);
+};
+
+/* ================= 학생: 응시 ================= */
+window.intro = function(pid, stage){
+  const p=P(pid), n=refLines(p).length;
+  const d = lsGet(draftKey(S.student.id,pid,stage));
+  const guide = stage===1
+   ? `<b>우리말 해석</b>이 문장마다 나와요. 해석 아래 칸에 <b>영어 문장</b>을 써 주세요. (${n}문장)`
+   : `<b>제목만</b> 보고 본문 전체를 처음부터 끝까지 써요. 해석도, 힌트도 나오지 않아요.`;
+  app.innerHTML = `<div class="card">
+    <div class="small">${esc(p.label)}</div>
+    <h2>${esc(p.title)}</h2>
+    <div class="pill"><b>${STAGE_NAME[stage]}</b><br>${guide}</div>
+    <div class="pill amber"><b>채점 기준 — 엄격해요</b><br>
+      · 철자는 물론 <b>대문자·소문자, 쉼표·마침표·물음표·따옴표</b>까지 교과서와 같아야 정답이에요.<br>
+      ${stage===1?"· 한 문장이 통째로 맞아야 그 문장이 정답으로 인정돼요.<br>":"· 낱말 하나하나를 교과서 본문과 순서대로 대조해요. 줄바꿈과 띄어쓰기 개수는 상관없어요.<br>· 소제목과 말하는 사람 이름(예: Host:)은 써도 되고 안 써도 돼요.<br>"}
+      · 붙여넣기는 할 수 없어요. 제출하면 바로 채점 결과와 정답을 볼 수 있어요.</div>
+    ${d?`<div class="pill">쓰다가 멈춘 답이 남아 있어요. 이어서 쓸 수 있어요.</div>`:""}
+    <div class="row"><button class="btn-primary" onclick="start(${pid},${stage})">${d?"이어서 쓰기":"시작하기"} →</button></div>
+    <div class="row"><button class="btn-ghost btn-sm" onclick="list(true)">← 목록으로</button></div>
+  </div>`;
+};
+const TA = `autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onpaste="return false" ondrop="return false"`;
+function autoGrow(el){ el.style.height="auto"; el.style.height=(el.scrollHeight+2)+"px"; }
+window.start = function(pid, stage){
+  const p=P(pid);
+  let d=null; try{ d=JSON.parse(lsGet(draftKey(S.student.id,pid,stage))||"null"); }catch(e){}
+  S.p=p; S.stage=stage; S.startedAt = Date.now() - ((d&&d.elapsed)||0);
+  let inner;
+  if(stage===1){
+    let no=0;
+    inner = p.lines.map(l=>{
+      if(l.h) return `<div class="sec">${esc(l.en)} <span class="small" style="font-weight:400">${esc(l.ko||"")}</span></div>`;
+      const i=no++;
+      return `<div class="ln"><div class="ko"><span class="no">${i+1}</span>${esc(l.ko)}</div>
+        ${l.sp?`<span class="spk">${esc(l.sp)}:</span>`:""}
+        <textarea rows="1" class="a1" data-i="${i}" ${TA} placeholder="영어로 써 주세요">${esc((d&&d.answers&&d.answers[i])||"")}</textarea></div>`;
+    }).join("");
+  } else {
+    inner = `<textarea class="big" id="a2" ${TA} placeholder="본문 전체를 여기에 써 주세요">${esc((d&&d.text)||"")}</textarea>`;
+  }
+  app.innerHTML = `<div class="card">
+    <div class="bar"><div><div class="small">${esc(p.label)} · ${STAGE_NAME[stage]}</div><h2 style="margin:0">${esc(p.title)}</h2>${stage===2&&p.title_ko?`<div class="small">${esc(p.title_ko)}</div>`:""}</div>
+      <button class="btn-ghost btn-sm" onclick="quit()">그만하기</button></div>
+    ${inner}
+    <div class="sticky"><button class="btn-primary" onclick="submit()">제출하고 채점 결과 보기</button>
+    <div class="small" style="text-align:center; margin-top:6px">쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</div></div>
+  </div>`;
+  window.scrollTo(0,0);
+  const save = () => lsSet(draftKey(S.student.id,pid,stage), JSON.stringify(Object.assign(collect(), {elapsed: Date.now()-S.startedAt})));
+  if(stage===1){
+    const els=[...document.querySelectorAll(".a1")];
+    els.forEach((el,k)=>{
+      autoGrow(el);
+      el.addEventListener("input", ()=>{ autoGrow(el); save(); });
+      el.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); if(els[k+1]) els[k+1].focus(); } });
+    });
+    if(els[0]) els[0].focus();
+  } else {
+    const el=document.getElementById("a2"); el.addEventListener("input", save); el.focus();
+  }
+};
+function collect(){
+  if(S.stage===1) return { answers: [...document.querySelectorAll(".a1")].map(el=>el.value) };
+  return { text: document.getElementById("a2").value };
+}
+window.quit = function(){ if(confirm("그만할까요? 지금까지 쓴 내용은 이 기기에 남아 있어서 나중에 이어서 쓸 수 있어요.")) list(true); };
+window.submit = async function(){
+  const c = collect(), p=S.p, stage=S.stage;
+  if(stage===1){
+    const blank = c.answers.filter(a=>!a.trim()).length;
+    if(blank===c.answers.length) return alert("아직 아무것도 쓰지 않았어요.");
+    if(!confirm(blank ? `아직 쓰지 않은 문장이 ${blank}개 있어요. 이대로 제출할까요?\n제출하면 정답이 공개돼요.` : "제출할까요? 제출하면 정답이 공개돼요.")) return;
+  } else {
+    if(!c.text.trim()) return alert("아직 아무것도 쓰지 않았어요.");
+    if(!confirm("제출할까요? 제출하면 정답이 공개돼요.")) return;
+  }
+  const g = stage===1 ? grade1(p, c.answers) : grade2(p, c.text);
+  const row = { passage_id:p.id, student_id:S.student.id, stage, answers:c, score:g.score, loose_score:g.loose_score, correct:g.correct, total:g.total,
+                duration_sec: Math.max(0, Math.round((Date.now()-S.startedAt)/1000)) };
+  document.querySelectorAll("button").forEach(b=>b.disabled=true);
+  const { data, error } = await sb.from("recall_attempts").insert(row).select().single();
+  if(error){ document.querySelectorAll("button").forEach(b=>b.disabled=false); return alert("제출에 실패했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.\n("+error.message+")"); }
+  lsDel(draftKey(S.student.id,p.id,stage));
+  S.attempts.push(data);
+  result(p, data, `<button class="btn-primary" onclick="start(${p.id},${stage})">다시 도전하기</button><button class="btn-ghost" onclick="list(true)">목록으로</button>`);
+};
+
+/* ================= 채점 결과 (학생·선생님 공용) ================= */
+function opsHtmlMine(ops, A, B){   // 내가 쓴 답 쪽: 정답에 없는 낱말은 취소선, 표기만 다른 낱말은 주황
+  return ops.filter(o=>o.t!=="del").map(o=> o.t==="eq" ? `<span class="eq">${esc(B[o.j])}</span>`
+    : o.near!==undefined ? `<span class="near">${esc(B[o.j])}</span>` : `<span class="ins">${esc(B[o.j])}</span>`).join(" ");
+}
+function opsHtmlRef(ops, A){       // 정답 쪽: 빠졌거나 틀린 낱말은 빨강, 표기만 다른 낱말은 주황
+  return ops.filter(o=>o.t!=="ins").map(o=> o.t==="eq" ? `<span class="eq">${esc(A[o.i])}</span>`
+    : o.near!==undefined ? `<span class="near">${esc(A[o.i])}</span>` : `<span class="del">${esc(A[o.i])}</span>`).join(" ");
+}
+const LEGEND = `<div class="legend"><span class="del">빨강 밑줄</span> 빠졌거나 틀린 낱말 · <span class="near">주황</span> 낱말은 맞지만 대소문자·문장부호가 다른 곳 · <span class="ins">취소선</span> 정답에 없는 낱말</div>`;
+function result(p, a, buttons){
+  const stage=a.stage, c=a.answers||{};
+  const head = `<div class="small">${esc(p.label)} · ${STAGE_NAME[stage]} · ${fmtDate(a.taken_at)}${a._name?` · ${esc(a._name)}`:""}</div><h2>${esc(p.title)}</h2>`;
+  let body;
+  if(stage===1){
+    const g = grade1(p, c.answers||[]);
+    let k=0;
+    body = `<div class="score-big">${fmtScore(g.score)}점</div>
+      <div class="statbox"><span>정답 <b>${g.correct}</b> / ${g.total}문장</span><span>대소문자·문장부호를 빼고 보면 <b>${fmtScore(g.loose_score)}점</b></span>${a.duration_sec?`<span>걸린 시간 ${Math.floor(a.duration_sec/60)}분 ${a.duration_sec%60}초</span>`:""}</div>
+      ${LEGEND}` +
+      p.lines.map(l=>{
+        if(l.h) return `<div class="sec">${esc(l.en)}</div>`;
+        const r=g.rows[k++];
+        const sp = l.sp?`<span class="optm">${esc(l.sp)}: </span>`:"";
+        if(r.ok) return `<div class="res"><div class="k">${k}. ${esc(l.ko)}</div><div><span class="mark o">○</span>${sp}${esc(l.en)}</div></div>`;
+        return `<div class="res"><div class="k">${k}. ${esc(l.ko)}</div>
+          <div><span class="mark x">✕</span><span class="tag">내 답</span>${r.B.length?opsHtmlMine(r.ops,r.A,r.B):'<span class="optm">(쓰지 않았어요)</span>'}</div>
+          <div><span class="mark" style="visibility:hidden">✕</span><span class="tag">정답</span>${sp}${r.B.length?opsHtmlRef(r.ops,r.A):`<span class="del">${esc(l.en)}</span>`}</div></div>`;
+      }).join("");
+  } else {
+    const g = grade2(p, c.text||"");
+    const byLine = {};
+    g.ops.filter(o=>o.t!=="ins").forEach(o=>{ const r=g.R[o.i]; (byLine[r.li] = byLine[r.li]||[]).push(
+      r.opt ? `<span class="optm">${esc(r.t)}</span>` : o.t==="eq" ? esc(r.t) : o.near!==undefined ? `<span class="near">${esc(r.t)}</span>` : `<span class="del">${esc(r.t)}</span>`); });
+    const refHtml = p.lines.map((l,li)=> l.h ? `<p style="font-weight:800;margin-top:8px">${(byLine[li]||[]).join(" ")}</p>` : `<p>${(byLine[li]||[]).join(" ")}</p>`).join("");
+    body = `<div class="score-big">${fmtScore(g.score)}점</div>
+      <div class="statbox"><span>맞은 낱말 <b>${g.correct}</b> / ${g.total}</span><span>대소문자·문장부호를 빼고 보면 <b>${fmtScore(g.loose_score)}점</b></span>${a.duration_sec?`<span>걸린 시간 ${Math.floor(a.duration_sec/60)}분 ${a.duration_sec%60}초</span>`:""}</div>
+      ${LEGEND}
+      <h3>① 교과서 본문과 비교</h3><div class="small">색이 칠해진 곳이 놓친 부분이에요. 회색(소제목·말하는 사람)은 점수에 들어가지 않아요.</div>
+      <div class="passage">${refHtml}</div>
+      <h3>② 내가 쓴 글</h3>
+      <div class="passage">${opsHtmlMine(g.ops, g.R.map(r=>r.t), g.B) || '<span class="optm">(쓰지 않았어요)</span>'}</div>`;
+  }
+  app.innerHTML = `<div class="card">${head}${body}<div class="row">${buttons||""}</div></div>`;
+  window.scrollTo(0,0);
+}
+
+/* ================= 선생님 ================= */
+function askPin(label){
+  return new Promise(res=>{
+    const bg=document.createElement("div"); bg.className="modal-bg";
+    bg.innerHTML=`<div class="modal"><div style="font-weight:800;margin-bottom:10px">${label}</div>
+      <input type="password" id="tpin" inputmode="numeric" autocomplete="off" style="width:100%;font-size:1.2rem;padding:10px;border:2px solid #cbd5e1;border-radius:10px;text-align:center;letter-spacing:.3em">
+      <div class="row"><button class="btn-primary" id="tok">확인</button><button class="btn-ghost" id="tcancel">취소</button></div></div>`;
+    document.body.appendChild(bg);
+    const inp=bg.querySelector("#tpin"); inp.focus();
+    const done=v=>{ bg.remove(); res(v); };
+    bg.querySelector("#tok").onclick=()=>done(inp.value);
+    bg.querySelector("#tcancel").onclick=()=>done(null);
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter") done(inp.value); });
+  });
+}
+window.teacherLogin = async function(){
+  const pin = await askPin("선생님 비밀번호");
+  if(pin===null) return;
+  const { data, error } = await sb.rpc("recall_passages_for_teacher", { p_pin: String(pin).trim() });
+  if(error){ return alert(/invalid pin/i.test(error.message||"") ? "비밀번호가 달라요." : "오류: "+error.message); }
+  T = { passages: data||[], school: CONFIG.SCHOOLS[0], view:"board" };
+  S = {};
+  dash();
+};
+window.dash = async function(keep){
+  if(!keep){
+    app.innerHTML = `<div class="card"><h2>본문 백지인출 · 선생님</h2><div class="sub">불러오는 중...</div></div>`;
+    const r1 = await sb.from("recall_attempts").select("*").order("taken_at"); if(r1.error) err(r1.error);
+    const r2 = await sb.from("students").select("id,name"); if(r2.error) err(r2.error);
+    T.names = {}; (r2.data||[]).forEach(s=>T.names[s.id]=s.name);
+    T.attempts = (r1.data||[]).filter(a=>!isExcluded(T.names[a.student_id]));
+  }
+  const ps = T.passages.filter(p=>(p.schools||[]).includes(T.school));
+  const pids = new Set(ps.map(p=>p.id));
+  const atts = T.attempts.filter(a=>pids.has(a.passage_id));
+  const sids = [...new Set(atts.map(a=>a.student_id))].sort((x,y)=>String(T.names[x]).localeCompare(String(T.names[y]),"ko"));
+  const cell = (sid,pid,st) => {
+    const a = atts.filter(x=>x.student_id===sid && x.passage_id===pid && x.stage===st);
+    if(!a.length) return `<td class="c small">–</td>`;
+    const best = Math.max(...a.map(x=>Number(x.score)));
+    return `<td class="c"><span class="cell" onclick="tAttempts('${sid}',${pid},${st})">${fmtScore(best)}</span><div class="small">첫 ${fmtScore(a[0].score)} · ${a.length}회</div></td>`;
+  };
+  const board = !ps.length ? `<div class="pill">등록된 지문이 없어요.</div>` : `
+    <div class="small">칸의 큰 숫자는 <b>최고 점수</b>예요. 누르면 제출 기록과 답안을 볼 수 있어요. 이 학교 지문을 한 번이라도 제출한 학생만 나와요.</div>
+    <div class="scrollx"><table>
+      <tr><th rowspan="2">학생</th>${ps.map(p=>`<th class="c" colspan="2">${esc(p.label)}</th>`).join("")}</tr>
+      <tr>${ps.map(()=>`<th class="c">1단계</th><th class="c">2단계</th>`).join("")}</tr>
+      ${sids.map(sid=>`<tr><td><b>${esc(T.names[sid]||"?")}</b></td>${ps.map(p=>cell(sid,p.id,1)+cell(sid,p.id,2)).join("")}</tr>`).join("") || `<tr><td colspan="${1+ps.length*2}" class="small">아직 제출한 학생이 없어요.</td></tr>`}
+    </table></div>
+    <h3>문장별 정답률 (1단계 · 학생별 첫 제출 기준)</h3>
+    <div class="row" style="margin-top:0">${ps.map(p=>`<button class="btn-ghost btn-sm" onclick="tLines(${p.id})">${esc(p.label)}</button>`).join("")}</div>`;
+  app.innerHTML = `<div class="card">
+    <div class="bar"><h1>본문 백지인출 · 선생님</h1><button class="btn-ghost btn-sm" onclick="home()">나가기</button></div>
+    <div class="tabs">${CONFIG.SCHOOLS.map(s=>`<button class="tab ${T.school===s?"on":""}" onclick="T.school='${s}';dash(true)">${s}</button>`).join("")}
+      <button class="tab" onclick="dash()">↻ 새로고침</button></div>
+    ${board}</div>`;
+};
+window.tAttempts = function(sid,pid,st){
+  const p=P(pid), a=T.attempts.filter(x=>x.student_id===sid && x.passage_id===pid && x.stage===st).slice().reverse();
+  app.innerHTML = `<div class="card">
+    <div class="bar"><h2>${esc(T.names[sid])} · ${esc(p.label)}</h2><button class="btn-ghost btn-sm" onclick="dash(true)">← 현황</button></div>
+    <div class="sub">${esc(p.title)} · ${STAGE_NAME[st]}</div>
+    <table><tr><th>제출</th><th class="c">점수</th><th class="c">부호·대소문자 제외</th><th class="c">맞은 개수</th><th class="c">시간</th><th></th></tr>
+    ${a.map(x=>`<tr><td>${fmtDate(x.taken_at)}</td><td class="c"><b>${fmtScore(x.score)}</b></td><td class="c">${x.loose_score==null?"–":fmtScore(x.loose_score)}</td><td class="c">${x.correct}/${x.total}</td><td class="c">${x.duration_sec?Math.round(x.duration_sec/60)+"분":"–"}</td><td><span class="cell" onclick="tShow(${x.id})">답안 보기</span></td></tr>`).join("")}
+    </table></div>`;
+};
+window.tShow = function(id){
+  const a = T.attempts.find(x=>x.id===id); if(!a) return;
+  result(P(a.passage_id), Object.assign({_name:T.names[a.student_id]}, a), `<button class="btn-ghost" onclick="tAttempts('${a.student_id}',${a.passage_id},${a.stage})">← 제출 기록</button>`);
+};
+window.tLines = function(pid){
+  const p=P(pid), first={};
+  T.attempts.filter(a=>a.passage_id===pid && a.stage===1).forEach(a=>{ if(!(a.student_id in first)) first[a.student_id]=a; });
+  const gs = Object.values(first).map(a=>grade1(p,(a.answers||{}).answers||[]));
+  const L = refLines(p), n=gs.length;
+  const rows = L.map((l,i)=>({ i, l, ok: gs.filter(g=>g.rows[i].ok).length })).sort((x,y)=>x.ok-y.ok);
+  app.innerHTML = `<div class="card">
+    <div class="bar"><h2>${esc(p.label)} · 문장별 정답률</h2><button class="btn-ghost btn-sm" onclick="dash(true)">← 현황</button></div>
+    <div class="sub">${esc(p.title)} · 1단계 첫 제출 ${n}명 기준, 정답률이 낮은 문장부터 보여요.</div>
+    ${n?`<table><tr><th class="c">번호</th><th>문장</th><th class="c">정답</th><th>정답률</th></tr>
+      ${rows.map(r=>`<tr><td class="c">${r.i+1}</td><td>${esc(r.l.en)}<div class="small">${esc(r.l.ko)}</div></td><td class="c">${r.ok}/${n}</td><td><div class="bargraph"><div style="width:${Math.round(r.ok/n*100)}%"></div></div></td></tr>`).join("")}</table>`
+      :`<div class="pill">아직 1단계를 제출한 학생이 없어요.</div>`}
+  </div>`;
+  window.scrollTo(0,0);
+};
+
+home();
+</script>
+</body>
+</html>
